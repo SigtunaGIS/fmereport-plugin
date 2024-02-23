@@ -1,0 +1,17 @@
+{
+  "name": "fmereport",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Visar resultat från ett fme jobb i rapportform",
+  "main": "./fmereport.js",
+  "scripts": {
+    "start": "npm run watch-js",
+    "watch-js": "webpack-dev-server --config ./tasks/webpack.dev.js --mode development",
+    "build": "webpack --config ./tasks/webpack.prod.js"
+  },
+  "devDependencies": {
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4",
+    "webpack-merge": "^5.10.0"
+  }
+}
