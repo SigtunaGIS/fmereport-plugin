@@ -18,6 +18,8 @@ const Fmereport = function Fmereport({
   
   let 
   content,
+  pixel,
+  layerName,
   itemCoordinate,
   jsonAsHTML,
   reportButton,
@@ -122,49 +124,61 @@ const fetchContent = async () => {
 
 //Activate layer, zoom and getFeaturInfo for object
 const onClickItem = (e) => {
+  //clear possible featureinfowindow
+  origo.api().getFeatureinfo().clear();
+
   for(const category of jsonData.category){
     for(const item of category.item){
       if((item.id == e.srcElement.id || item.id == e.srcElement.parentNode.parentNode.id) && category.layerName){
         origo.api().getLayer(category.layerName).setVisible(true);
         itemCoordinate = JSON.parse(item.geometry);
+        layerName = category.layerName;
+        map.once('rendercomplete', onRenderComplete);
         map.getView().setCenter(itemCoordinate);
      
         //Kan använda origo api för simplare implementering men detta säkerställer att det funkar även för wms-källor. Krav på json blir då unikt id för objekt istället för geometri.
         //Exempel: 
         //origo.api().getFeatureinfo().showFeatureInfo({ feature: origo.api().getLayer(lagernamn).getSource().getFeatureById(lagerid), layerName: lagernamn });
-
-        //TODO:Look for other solution than setTimeout as it is not ideal
-        setTimeout(() => {
-        pixel = map.getPixelFromCoordinate(itemCoordinate);
-
-        parameters = {
-        clusterFeatureinfoLevel: 2,
-        coordinate: itemCoordinate, 
-        hitTolerance: 5,
-        map: map,
-        pixel: pixel};
-
-        remoteParameters = {
-          coordinate: itemCoordinate, 
-          map: map,
-          pixel: pixel}
-
-        //Get vector features
-        const clientResult = Origo.getFeatureInfo.getFeaturesAtPixel(parameters, viewer);
-        //Get WMS features
-        Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
-          const serverResult = data || [];
-          const result = serverResult.concat(clientResult).filter((feature) => feature.selectionGroup == category.layerName);
-          //Show infowindow and zoom to object
-          if( (result.length > 0)) {
-            origo.api().getFeatureinfo().render(result, 'overlay', itemCoordinate,false);
-            map.getView().fit(result[0].feature.getGeometry().getExtent());
-          }
-        });
-      }, "150");
     }
   }
   }
+}
+
+const onRenderComplete = () =>{
+  //Only run function if there is a coordinate 
+  if (!itemCoordinate) {
+    return;
+  }
+        pixel = map.getPixelFromCoordinate(itemCoordinate);
+
+        parameters = {
+        clusterFeatureinfoLevel: 2, // The level at which clustered features should be expanded to individual features
+        coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
+        hitTolerance: 5, // The pixel tolerance for hit detection
+        map: map, // An instance of an OpenLayers map
+        pixel: pixel}; // The pixel location of the map corresponding to the coordinate}
+
+        remoteParameters = {
+          coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
+          map: map, // An instance of an OpenLayers map
+          pixel: pixel}
+
+        //Get vector features
+        const clientResult =  Origo.getFeatureInfo.getFeaturesAtPixel(parameters, viewer);
+        //Get WMS features
+        Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
+          const serverResult = data || [];
+          const result = serverResult.concat(clientResult).filter((feature) => feature.selectionGroup == layerName);
+          //Show infowindow and zoom to object
+          if( (result.length > 0)) {
+            //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
+            origo.api().getFeatureinfo().render(result, origo.getConfig().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
+            map.getView().fit(result[0].feature.getGeometry().getExtent());
+          itemCoordinate = '';
+          layerName = ''; 
+          }
+        });
+     
 }
 
 const createJsonTable = (jsonData) => {
