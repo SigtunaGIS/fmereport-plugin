@@ -26,7 +26,8 @@ In the Origo project index.html import swiper component
 		origo.on('load', function (viewer) {
         var fmereport = Fmereport({
 			reportNames: ['Byggrapport', 'Another report title'],
-			reportUrls: ['urlToFMEFlow/fmedatastreaming/SEIAWC/Byggrapport.fmw?token=token', 'Another URL']
+			reportUrls: ['urlToFMEFlow/fmedatastreaming/SEIAWC/Byggrapport.fmw?token=token', 'Another URL'],
+			reportIcon: '#fa-info'
 			});
         viewer.addComponent(fmereport);
       });
