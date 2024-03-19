@@ -1,10 +1,10 @@
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
-  reportUrls = ['FME Flow URL with token parameter']
+  reportUrls = ['FME Flow URL with token parameter'],
+  reportIcon = ''
 } = {}) {
 
   const
-  icon = '#fa-info-circle',
   dom = Origo.ui.dom,
   source = new Origo.ol.source.Vector(),
   vector = new Origo.ol.layer.Vector({
@@ -537,7 +537,7 @@ return Origo.ui.Component({
       click() {
         toggleReportButton();
       },
-      icon: icon,
+      icon: reportIcon,
       tooltipText: 'Ta fram en rapport',
       tooltipPlacement: 'east'
     });
