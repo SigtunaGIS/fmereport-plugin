@@ -448,6 +448,8 @@ const renderReportSelect= () => {
   });
 }
 
+
+
 return Origo.ui.Component({
   name: 'fmereport',
   onInit() {
@@ -477,7 +479,10 @@ return Origo.ui.Component({
     reportToolTitle = Origo.ui.Element({
       tagName: 'p',
       cls: 'text-smaller',
-      innerHTML: 'Rapportverktyg:'
+      innerHTML: 'Rapportverktyg:',
+      style: {
+        padding: '0.4rem'
+      }
     });
      
     closeButton = Origo.ui.Button({
@@ -503,14 +508,16 @@ return Origo.ui.Component({
       text: 'Skicka rapport',
       style: {
         padding: '0.4rem',
+        margin: '0.2rem',
         width: '10rem',
+        float: 'left',
         'background-color': '#ebebeb'
       }
     });
 
     reportToolBoxContent = Origo.ui.Element({
       tagName: 'div',
-      components: [ reportToolTitle,polygonButton,pointButton,reportSelect,requestButton]
+      components: [ reportToolTitle,reportSelect,polygonButton,pointButton,requestButton]
     });
 
     reportBoxContent = Origo.ui.Element({
