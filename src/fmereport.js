@@ -448,7 +448,49 @@ const renderReportSelect= () => {
   });
 }
 
+const makeElementDraggable= (element) => {
+  // The initial x and y positions of the mouse
+  let mouseX = 0, mouseY = 0;
 
+  // Function to handle the dragging movement
+  function onMouseMove(event) {
+    console.log(event);
+    // Calculate the new position
+    const dx = event.clientX - mouseX;
+    const dy = event.clientY - mouseY;
+
+    // Set the new position of the element
+    element.style.left = (element.offsetLeft + dx) + 'px';
+    element.style.top = (element.offsetTop + dy) + 'px';
+
+    // Update the mouse position
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+  }
+
+  // Function to stop the dragging
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+
+  // Function to start the dragging
+  function onMouseDown(event) {
+    console.log(event);
+    // if ( not clicked on header) {return;}
+
+    // Record the initial mouse positionz
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+
+    // Attach event listeners to handle the dragging
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }
+
+  // Attach the mousedown event listener to start dragging
+  element.addEventListener('mousedown', onMouseDown);
+}
 
 return Origo.ui.Component({
   name: 'fmereport',
@@ -517,12 +559,12 @@ return Origo.ui.Component({
 
     reportToolBoxContent = Origo.ui.Element({
       tagName: 'div',
-      components: [ reportToolTitle,reportSelect,polygonButton,pointButton,requestButton]
+      components: [reportToolTitle,reportSelect,polygonButton,pointButton,requestButton]
     });
 
     reportBoxContent = Origo.ui.Element({
       tagName: 'div',
-      components: [ closeButton]
+      components: [closeButton]
     });
 
     reportBox = Origo.ui.Element({
@@ -581,9 +623,10 @@ return Origo.ui.Component({
     document.getElementById(closeButton.getId()).addEventListener('click', () => disableReportButton());
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction());
     
+    makeElementDraggable(document.getElementById(reportToolBox.getId()));
     this.dispatch('render');
   }
 });
 };
 
-export default Fmereport;
+//export default Fmereport;
