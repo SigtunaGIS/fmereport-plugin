@@ -1,7 +1,7 @@
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
-  reportIcon = ''
+  reportIcon = '#fa-info-circle'
 } = {}) {
 
   const
@@ -15,7 +15,6 @@ const Fmereport = function Fmereport({
   zIndex: 8,
   styleName: 'origoStylefunction'
 });
-  
   let 
   content,
   pixel,
@@ -36,16 +35,13 @@ const Fmereport = function Fmereport({
   map,
   requestButton,
   isActive = false,
-  polygonActive = false,
+  activeTool = null,
   geom,
   coordinatesArray = [],
   polygonButton,
   actLikeRadioButton,
   jsonData,
-  draw = new Origo.ol.interaction.Draw({
-  source: source,
-  type: 'Polygon'
-});  
+  draw;  
 
 //Initiate fetch from FME Flow ( or other source)
 const fetchContent = async () => {
@@ -318,6 +314,7 @@ const onDrawStart = (evt) => {
   }
 }
 
+//Set active when drawing to not invoke getFeatureInfo click interaction etc.
 const toggleDraw = (active) => { 
   const details = {
     tool: 'ReportGeometry',
@@ -328,58 +325,67 @@ const toggleDraw = (active) => {
   },100);
 };
 
-const handleOverlapping = () => {
-  if (document.getElementsByClassName('o-search').length > 0) {
-    const search = document.getElementsByClassName('o-search')[0];
-    const filter = document.getElementById(reportToolBoxContent.getId());
-
-    if (isOverlapping(search, filter)) {
-      document.getElementById(reportToolBox.getId()).style.top = '4rem';
-      breakingWidth = window.innerWidth;
-    } else if (window.innerWidth > breakingWidth) {
-      document.getElementById(reportToolBox.getId()).style.top = '1rem';
-    }
-  }
-}
-
 //Enables/disables and clears geom when activating draw polygon
-const mapInteraction = () => {
-  if(polygonActive){
-    clearGeometry()
+const mapInteraction = (drawTool) => {
+  const toolButtonMapping = {
+    'Polygon': polygonButton.getId(),
+    'Point': pointButton.getId(),
+    // Add more tools here as needed, for example:
+    // 'Pick': pickGeometryButton.getId(),
+  };
+  let activeButtonId = toolButtonMapping[drawTool];
+ // If draw is active remove the existing interaction
+  if (draw) {
     map.removeInteraction(draw);
-    draw.setActive(false);
-    document.getElementById(polygonButton.getId()).classList.remove('active'); 
-    document.getElementById(polygonButton.getId()).classList.remove('hover');
+    draw = null;
+  }
+  // Deactivate the previously active tool's button
+  if (activeTool) {
+    document.getElementById(toolButtonMapping[activeTool]).classList.remove('active', 'hover');
     toggleDraw(false);
-    polygonActive = false;
+  }
+  // If the selected tool is already active, deactivate it
+  if(activeTool === drawTool){
+    clearGeometry();
+    activeTool = null;
   }
   else{
-  clearGeometry()
-  document.getElementById(polygonButton.getId()).classList.add('active');
-  toggleDraw(true);
+    activeTool = drawTool;
+    clearGeometry()
+    document.getElementById(activeButtonId).classList.add('active');
+    toggleDraw(true);
+    // Create a new draw interaction with the selected draw tool
+    draw = new Origo.ol.interaction.Draw({
+      source: source,
+      type: drawTool 
+    });
   
-  map.addInteraction(draw);
-  draw.setActive(true);
-  polygonActive = true;
-  }
+    map.addInteraction(draw);
+    draw.setActive(true);
+    
   draw.on('drawstart', onDrawStart, this);
   draw.on('drawend', (evt) => {
     geom = evt.feature.getGeometry().clone();
-    let coordinates = geom.flatCoordinates
-    coordinatesArray = []
+    let coordinates = geom.flatCoordinates;
+    coordinatesArray = [];
     //Creates coordinateArray for FME Flow
-    for (let i = 0; i < coordinates.length-2; i++) {
-      coordinatesArray.push(coordinates[i] +  ":" + coordinates[i+1])
-      i++
- 
+    if(drawTool == 'Polygon'){
+      for (let i = 0; i < coordinates.length-2; i++) {
+        coordinatesArray.push(coordinates[i] +  ":" + coordinates[i+1])
+        i++
+      }
     }
-    document.getElementById(polygonButton.getId()).classList.remove('active');
+    else {
+      coordinatesArray.push(coordinates[0] +  ":" + coordinates[0+1]);
+    }
+    document.getElementById(activeButtonId).classList.remove('active');
     enableDoubleClickZoom();
     toggleDraw(false);
     map.removeInteraction(draw);
     draw.setActive(false);
-    polygonActive = false;
+    activeTool = null;
   });
+  }
 }
 
 
@@ -409,7 +415,7 @@ const disableReportButton = () => {
   }
 }
 
-
+//Removes drawn geometry and empties coordinate(s) to be sent to FME
 const clearGeometry = () => {
   if (source) {
     source.clear();
@@ -429,7 +435,6 @@ const toggleReportButton = () => {
     viewer.dispatch('toggleClickInteraction', detail);
   } else if (document.getElementById(reportButton.getId()).classList.contains('tooltip')) {
     enableReportButton();
-    handleOverlapping();
   } else {
     disableReportButton();
   }
@@ -572,7 +577,8 @@ return Origo.ui.Component({
   
     document.getElementById(requestButton.getId()).addEventListener('click', () => fetchContent());
     document.getElementById(closeButton.getId()).addEventListener('click', () => disableReportButton());
-    document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction());
+    document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
+    document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
     this.dispatch('render');
   }
