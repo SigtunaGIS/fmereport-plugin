@@ -1,10 +1,10 @@
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
-  reportUrls = ['FME Flow URL with token parameter']
+  reportUrls = ['FME Flow URL with token parameter'],
+  reportIcon = '#fa-info-circle'
 } = {}) {
 
   const
-  icon = '#fa-info-circle',
   dom = Origo.ui.dom,
   source = new Origo.ol.source.Vector(),
   vector = new Origo.ol.layer.Vector({
@@ -15,9 +15,10 @@ const Fmereport = function Fmereport({
   zIndex: 8,
   styleName: 'origoStylefunction'
 });
-  
   let 
   content,
+  pixel,
+  layerName,
   itemCoordinate,
   jsonAsHTML,
   reportButton,
@@ -34,16 +35,13 @@ const Fmereport = function Fmereport({
   map,
   requestButton,
   isActive = false,
-  polygonActive = false,
+  activeTool = null,
   geom,
   coordinatesArray = [],
   polygonButton,
   actLikeRadioButton,
   jsonData,
-  draw = new Origo.ol.interaction.Draw({
-  source: source,
-  type: 'Polygon'
-});  
+  draw;  
 
 //Initiate fetch from FME Flow ( or other source)
 const fetchContent = async () => {
@@ -122,49 +120,61 @@ const fetchContent = async () => {
 
 //Activate layer, zoom and getFeaturInfo for object
 const onClickItem = (e) => {
+  //clear possible featureinfowindow
+  origo.api().getFeatureinfo().clear();
+
   for(const category of jsonData.category){
     for(const item of category.item){
       if((item.id == e.srcElement.id || item.id == e.srcElement.parentNode.parentNode.id) && category.layerName){
         origo.api().getLayer(category.layerName).setVisible(true);
         itemCoordinate = JSON.parse(item.geometry);
+        layerName = category.layerName;
+        map.once('rendercomplete', onRenderComplete);
         map.getView().setCenter(itemCoordinate);
      
         //Kan använda origo api för simplare implementering men detta säkerställer att det funkar även för wms-källor. Krav på json blir då unikt id för objekt istället för geometri.
         //Exempel: 
         //origo.api().getFeatureinfo().showFeatureInfo({ feature: origo.api().getLayer(lagernamn).getSource().getFeatureById(lagerid), layerName: lagernamn });
-
-        //TODO:Look for other solution than setTimeout as it is not ideal
-        setTimeout(() => {
-        pixel = map.getPixelFromCoordinate(itemCoordinate);
-
-        parameters = {
-        clusterFeatureinfoLevel: 2,
-        coordinate: itemCoordinate, 
-        hitTolerance: 5,
-        map: map,
-        pixel: pixel};
-
-        remoteParameters = {
-          coordinate: itemCoordinate, 
-          map: map,
-          pixel: pixel}
-
-        //Get vector features
-        const clientResult = Origo.getFeatureInfo.getFeaturesAtPixel(parameters, viewer);
-        //Get WMS features
-        Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
-          const serverResult = data || [];
-          const result = serverResult.concat(clientResult).filter((feature) => feature.selectionGroup == category.layerName);
-          //Show infowindow and zoom to object
-          if( (result.length > 0)) {
-            origo.api().getFeatureinfo().render(result, 'overlay', itemCoordinate,false);
-            map.getView().fit(result[0].feature.getGeometry().getExtent());
-          }
-        });
-      }, "150");
     }
   }
   }
+}
+
+const onRenderComplete = () =>{
+  //Only run function if there is a coordinate 
+  if (!itemCoordinate) {
+    return;
+  }
+        pixel = map.getPixelFromCoordinate(itemCoordinate);
+
+        parameters = {
+        clusterFeatureinfoLevel: 2, // The level at which clustered features should be expanded to individual features
+        coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
+        hitTolerance: 5, // The pixel tolerance for hit detection
+        map: map, // An instance of an OpenLayers map
+        pixel: pixel}; // The pixel location of the map corresponding to the coordinate}
+
+        remoteParameters = {
+          coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
+          map: map, // An instance of an OpenLayers map
+          pixel: pixel}
+
+        //Get vector features
+        const clientResult =  Origo.getFeatureInfo.getFeaturesAtPixel(parameters, viewer);
+        //Get WMS features
+        Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
+          const serverResult = data || [];
+          const result = serverResult.concat(clientResult).filter((feature) => feature.selectionGroup == layerName);
+          //Show infowindow and zoom to object
+          if( (result.length > 0)) {
+            //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
+            origo.api().getFeatureinfo().render(result, origo.getConfig().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
+            map.getView().fit(result[0].feature.getGeometry().getExtent());
+          itemCoordinate = '';
+          layerName = ''; 
+          }
+        });
+     
 }
 
 const createJsonTable = (jsonData) => {
@@ -304,6 +314,7 @@ const onDrawStart = (evt) => {
   }
 }
 
+//Set active when drawing to not invoke getFeatureInfo click interaction etc.
 const toggleDraw = (active) => { 
   const details = {
     tool: 'ReportGeometry',
@@ -314,58 +325,67 @@ const toggleDraw = (active) => {
   },100);
 };
 
-const handleOverlapping = () => {
-  if (document.getElementsByClassName('o-search').length > 0) {
-    const search = document.getElementsByClassName('o-search')[0];
-    const filter = document.getElementById(reportToolBoxContent.getId());
-
-    if (isOverlapping(search, filter)) {
-      document.getElementById(reportToolBox.getId()).style.top = '4rem';
-      breakingWidth = window.innerWidth;
-    } else if (window.innerWidth > breakingWidth) {
-      document.getElementById(reportToolBox.getId()).style.top = '1rem';
-    }
-  }
-}
-
 //Enables/disables and clears geom when activating draw polygon
-const mapInteraction = () => {
-  if(polygonActive){
-    clearGeometry()
+const mapInteraction = (drawTool) => {
+  const toolButtonMapping = {
+    'Polygon': polygonButton.getId(),
+    'Point': pointButton.getId(),
+    // Add more tools here as needed, for example:
+    // 'Pick': pickGeometryButton.getId(),
+  };
+  let activeButtonId = toolButtonMapping[drawTool];
+ // If draw is active remove the existing interaction
+  if (draw) {
     map.removeInteraction(draw);
-    draw.setActive(false);
-    document.getElementById(polygonButton.getId()).classList.remove('active'); 
-    document.getElementById(polygonButton.getId()).classList.remove('hover');
+    draw = null;
+  }
+  // Deactivate the previously active tool's button
+  if (activeTool) {
+    document.getElementById(toolButtonMapping[activeTool]).classList.remove('active', 'hover');
     toggleDraw(false);
-    polygonActive = false;
+  }
+  // If the selected tool is already active, deactivate it
+  if(activeTool === drawTool){
+    clearGeometry();
+    activeTool = null;
   }
   else{
-  clearGeometry()
-  document.getElementById(polygonButton.getId()).classList.add('active');
-  toggleDraw(true);
+    activeTool = drawTool;
+    clearGeometry()
+    document.getElementById(activeButtonId).classList.add('active');
+    toggleDraw(true);
+    // Create a new draw interaction with the selected draw tool
+    draw = new Origo.ol.interaction.Draw({
+      source: source,
+      type: drawTool 
+    });
   
-  map.addInteraction(draw);
-  draw.setActive(true);
-  polygonActive = true;
-  }
+    map.addInteraction(draw);
+    draw.setActive(true);
+    
   draw.on('drawstart', onDrawStart, this);
   draw.on('drawend', (evt) => {
     geom = evt.feature.getGeometry().clone();
-    let coordinates = geom.flatCoordinates
-    coordinatesArray = []
+    let coordinates = geom.flatCoordinates;
+    coordinatesArray = [];
     //Creates coordinateArray for FME Flow
-    for (let i = 0; i < coordinates.length-2; i++) {
-      coordinatesArray.push(coordinates[i] +  ":" + coordinates[i+1])
-      i++
- 
+    if(drawTool == 'Polygon'){
+      for (let i = 0; i < coordinates.length-2; i++) {
+        coordinatesArray.push(coordinates[i] +  ":" + coordinates[i+1])
+        i++
+      }
     }
-    document.getElementById(polygonButton.getId()).classList.remove('active');
+    else {
+      coordinatesArray.push(coordinates[0] +  ":" + coordinates[0+1]);
+    }
+    document.getElementById(activeButtonId).classList.remove('active');
     enableDoubleClickZoom();
     toggleDraw(false);
     map.removeInteraction(draw);
     draw.setActive(false);
-    polygonActive = false;
+    activeTool = null;
   });
+  }
 }
 
 
@@ -395,7 +415,7 @@ const disableReportButton = () => {
   }
 }
 
-
+//Removes drawn geometry and empties coordinate(s) to be sent to FME
 const clearGeometry = () => {
   if (source) {
     source.clear();
@@ -415,7 +435,6 @@ const toggleReportButton = () => {
     viewer.dispatch('toggleClickInteraction', detail);
   } else if (document.getElementById(reportButton.getId()).classList.contains('tooltip')) {
     enableReportButton();
-    handleOverlapping();
   } else {
     disableReportButton();
   }
@@ -523,7 +542,7 @@ return Origo.ui.Component({
       click() {
         toggleReportButton();
       },
-      icon: icon,
+      icon: reportIcon,
       tooltipText: 'Ta fram en rapport',
       tooltipPlacement: 'east'
     });
@@ -558,7 +577,8 @@ return Origo.ui.Component({
   
     document.getElementById(requestButton.getId()).addEventListener('click', () => fetchContent());
     document.getElementById(closeButton.getId()).addEventListener('click', () => disableReportButton());
-    document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction());
+    document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
+    document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
     this.dispatch('render');
   }
