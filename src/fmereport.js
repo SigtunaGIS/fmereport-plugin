@@ -154,6 +154,7 @@ const onRenderComplete = () =>{
         map: map, // An instance of an OpenLayers map
         pixel: pixel}; // The pixel location of the map corresponding to the coordinate}
 
+
         let remoteParameters = {
           coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
           map: map, // An instance of an OpenLayers map
