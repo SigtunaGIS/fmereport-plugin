@@ -147,14 +147,14 @@ const onRenderComplete = () =>{
   }
         pixel = map.getPixelFromCoordinate(itemCoordinate);
 
-        parameters = {
+        let parameters = {
         clusterFeatureinfoLevel: 2, // The level at which clustered features should be expanded to individual features
         coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
         hitTolerance: 5, // The pixel tolerance for hit detection
         map: map, // An instance of an OpenLayers map
         pixel: pixel}; // The pixel location of the map corresponding to the coordinate}
 
-        remoteParameters = {
+        let remoteParameters = {
           coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
           map: map, // An instance of an OpenLayers map
           pixel: pixel}
