@@ -17,7 +17,6 @@ const Fmereport = function Fmereport({
 });
   let 
   content,
-  pixel,
   layerName,
   itemCoordinate,
   jsonAsHTML,
@@ -41,7 +40,8 @@ const Fmereport = function Fmereport({
   polygonButton,
   actLikeRadioButton,
   jsonData,
-  draw;  
+  draw,
+  layerGid;  
 
 //Initiate fetch from FME Flow ( or other source)
 const fetchContent = async () => {
@@ -123,59 +123,50 @@ const onClickItem = (e) => {
   //clear possible featureinfowindow
   origo.api().getFeatureinfo().clear();
 
-  for(const category of jsonData.category){
-    for(const item of category.item){
-      if((item.id == e.srcElement.id || item.id == e.srcElement.parentNode.parentNode.id) && category.layerName){
-        origo.api().getLayer(category.layerName).setVisible(true);
-        itemCoordinate = JSON.parse(item.geometry);
-        layerName = category.layerName;
-        map.once('rendercomplete', onRenderComplete);
-        map.getView().setCenter(itemCoordinate);
-     
-        //Kan använda origo api för simplare implementering men detta säkerställer att det funkar även för wms-källor. Krav på json blir då unikt id för objekt istället för geometri.
-        //Exempel: 
-        //origo.api().getFeatureinfo().showFeatureInfo({ feature: origo.api().getLayer(lagernamn).getSource().getFeatureById(lagerid), layerName: lagernamn });
-    }
-  }
+  const category = jsonData.category.find(c => c.item.some(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id));
+  const item = category.item.find(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id);
+
+  origo.api().getLayer(category.layerName).setVisible(true);
+  itemCoordinate = JSON.parse(item.geometry);
+  layerName = category.layerName;
+  layerGid = item.gid;
+
+  map.once('rendercomplete', () => onRenderComplete(itemCoordinate, layerName, layerGid));
+  //Extra settings to find feature when vector layer with id is not present
+  if(origo.api().getLayer(layerName).getProperties().layerType != 'vector' || !layerGid){
+    origo.api().getMap().getView().setZoom(10);
+    map.getView().setCenter(itemCoordinate);
   }
 }
 
-const onRenderComplete = () =>{
+const onRenderComplete = (itemCoordinate, layerName, layerGid) =>{
   //Only run function if there is a coordinate 
-  if (!itemCoordinate) {
-    return;
+  if (!itemCoordinate) return;
+
+  //Vector layer with ID field can make use of origo api function to show and zoom to object
+  if(origo.api().getLayer(layerName).getProperties().layerType == 'vector' && layerGid){
+    origo.api().getFeatureinfo().showFeatureInfo({ feature: origo.api().getLayer(layerName).getSource().getFeatureById(`${layerName}.${layerGid}`), layerName: layerName });
   }
-        pixel = map.getPixelFromCoordinate(itemCoordinate);
+  //Vector layer without ID field or WMS layer need more handling
+  else{
+    let pixel = map.getPixelFromCoordinate(itemCoordinate);
+    let parameters = { clusterFeatureinfoLevel: 2, coordinate: itemCoordinate, hitTolerance: 5, map: map, pixel: pixel};
+    let remoteParameters = { coordinate: itemCoordinate, map: map, pixel: pixel}
 
-        let parameters = {
-        clusterFeatureinfoLevel: 2, // The level at which clustered features should be expanded to individual features
-        coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
-        hitTolerance: 5, // The pixel tolerance for hit detection
-        map: map, // An instance of an OpenLayers map
-        pixel: pixel}; // The pixel location of the map corresponding to the coordinate}
-
-
-        let remoteParameters = {
-          coordinate: itemCoordinate, // The map coordinate corresponding to the pixel location
-          map: map, // An instance of an OpenLayers map
-          pixel: pixel}
-
-        //Get vector features
-        const clientResult =  Origo.getFeatureInfo.getFeaturesAtPixel(parameters, viewer);
-        //Get WMS features
-        Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
-          const serverResult = data || [];
-          const result = serverResult.concat(clientResult).filter((feature) => feature.selectionGroup == layerName);
-          //Show infowindow and zoom to object
-          if( (result.length > 0)) {
-            //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
-            origo.api().getFeatureinfo().render(result, origo.getConfig().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
-            map.getView().fit(result[0].feature.getGeometry().getExtent());
-          itemCoordinate = '';
-          layerName = ''; 
-          }
-        });
-     
+    //Get vector features
+    const clientResult =  Origo.getFeatureInfo.getFeaturesAtPixel(parameters, viewer);
+    //Get WMS features
+    Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
+      const serverResult = data || [];
+      const result = serverResult.concat(clientResult).filter((feature) => feature.feature.id_ === `${layerName}.${layerGid}` || feature.selectionGroup === layerName);
+      //Show infowindow and zoom to object
+      if( (result.length > 0)) {
+        //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
+        origo.api().getFeatureinfo().render(result, origo.getConfig().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
+        map.getView().fit(result[0].feature.getGeometry().getExtent());
+      }
+    });
+  }
 }
 
 const createJsonTable = (jsonData) => {
@@ -586,4 +577,4 @@ return Origo.ui.Component({
 });
 };
 
-export default Fmereport;
+//export default Fmereport;
