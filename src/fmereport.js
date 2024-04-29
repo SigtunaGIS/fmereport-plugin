@@ -41,6 +41,7 @@ const Fmereport = function Fmereport({
   actLikeRadioButton,
   jsonData,
   draw,
+  reportHeader,
   layerGid;  
 
 //Initiate fetch from FME Flow ( or other source)
@@ -89,6 +90,7 @@ const fetchContent = async () => {
         document.getElementById(reportBox.getId()).removeChild(divs[1]); // This removes the first div inside the container
       }
       document.getElementById(reportBox.getId()).appendChild(dom.html(jsonAsHTML.render()));
+      makeElementDraggable(document.getElementById(reportBox.getId()), document.getElementById(reportHeader));
     
       //Add listener to buttons in report
       for(const category of jsonData.category){
@@ -174,9 +176,13 @@ const createJsonTable = (jsonData) => {
   const container = document.createElement('div');
   const rubrik = Origo.ui.Element({
     tagName: 'div',
+    style: {
+      cursor: 'move',
+    },
     cls: 'report-header',
     innerHTML: jsonData.title
   });
+  reportHeader = rubrik.getId()
   container.innerHTML = rubrik.render();
 
   //Generate categories
@@ -380,6 +386,49 @@ const mapInteraction = (drawTool) => {
   }
 }
 
+const makeElementDraggable= (element, header) => {
+  // The initial x and y positions of the mouse
+  let mouseX = 0, mouseY = 0;
+
+  // Function to handle the dragging movement
+  function onMouseMove(event) {
+    // Calculate the new position
+    const dx = event.clientX - mouseX;
+    const dy = event.clientY - mouseY;
+
+    // Set the new position of the element
+    element.style.left = (element.offsetLeft + dx) + 'px';
+    element.style.top = (element.offsetTop + dy) + 'px';
+
+    // Update the mouse position
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+  }
+
+  // Function to stop the dragging
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+
+  // Function to start the dragging
+  function onMouseDown(event) {
+    if (!header.contains(event.target)) {
+      return;
+    }
+
+    // Record the initial mouse position
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+
+    // Attach event listeners to handle the dragging
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }
+
+  // Attach the mousedown event listener to start dragging
+  element.addEventListener('mousedown', onMouseDown);
+}
 
 const enableReportButton = () => {
   document.getElementById(reportButton.getId()).classList.add('active');
@@ -457,6 +506,7 @@ return Origo.ui.Component({
         top: '1rem',
         padding: '0.5rem',
         width: '15rem',
+        position: 'absolute',
         'z-index': '-1'
       }
     });
@@ -472,9 +522,12 @@ return Origo.ui.Component({
     });
 
     reportToolTitle = Origo.ui.Element({
-      tagName: 'p',
-      cls: 'text-smaller',
-      innerHTML: 'Rapportverktyg:'
+      tagName: 'div',
+      cls: 'report-tool-header',
+      innerHTML: 'Rapportverktyg',
+      style: {
+        cursor: 'move',
+      }
     });
      
     closeButton = Origo.ui.Button({
@@ -500,14 +553,19 @@ return Origo.ui.Component({
       text: 'Skicka rapport',
       style: {
         padding: '0.4rem',
+        margin: '0.2rem',
         width: '10rem',
+        float: 'left',
         'background-color': '#ebebeb'
       }
     });
 
     reportToolBoxContent = Origo.ui.Element({
       tagName: 'div',
-      components: [ reportToolTitle,polygonButton,pointButton,reportSelect,requestButton]
+      components: [ reportToolTitle,reportSelect,polygonButton,pointButton,requestButton],
+      style: {
+        'user-select': 'none'
+      }
     });
 
     reportBoxContent = Origo.ui.Element({
@@ -525,7 +583,8 @@ return Origo.ui.Component({
         'max-width': '30rem',
         'overflow-x': 'auto',
         'overflow-y': 'auto',
-        'z-index': '-1'
+        'z-index': '-1',
+        'user-select': 'none'
       }
     });
 
@@ -572,9 +631,10 @@ return Origo.ui.Component({
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
+    makeElementDraggable(document.getElementById(reportToolBox.getId()), document.getElementById(reportToolTitle.getId()));
     this.dispatch('render');
   }
 });
 };
 
-//export default Fmereport;
+export default Fmereport;
