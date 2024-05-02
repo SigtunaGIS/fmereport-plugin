@@ -87,11 +87,12 @@ const fetchContent = async () => {
       });
       let divs = document.getElementById(reportBox.getId()).getElementsByTagName('div');
       if (divs.length > 1) {
-        document.getElementById(reportBox.getId()).removeChild(divs[1]); // This removes the first div inside the container
+        document.getElementById(reportBox.getId()).removeChild(divs[0]); // This removes the first div inside the container
       }
       document.getElementById(reportBox.getId()).appendChild(dom.html(jsonAsHTML.render()));
       makeElementDraggable(document.getElementById(reportBox.getId()), document.getElementById(reportHeader));
-    
+      document.getElementById(closeButtonReportBox.getId()).addEventListener('click', () => disableReportButton());
+
       //Add listener to buttons in report
       for(const category of jsonData.category){
         for(const item of category.item){
@@ -175,15 +176,17 @@ const createJsonTable = (jsonData) => {
   // Create a container element to hold the generated HTML
   const container = document.createElement('div');
   const rubrik = Origo.ui.Element({
-    tagName: 'div',
+    innerHTML: jsonData.title
+  });
+  const rubrikComponent = Origo.ui.Element({
+    cls: 'report-header flex row',
     style: {
       cursor: 'move',
     },
-    cls: 'report-header',
-    innerHTML: jsonData.title
+    components: [rubrik, closeButtonReportBox]
   });
-  reportHeader = rubrik.getId()
-  container.innerHTML = rubrik.render();
+  reportHeader = rubrikComponent.getId()
+  container.innerHTML = rubrikComponent.render();
 
   //Generate categories
   for (const cat of jsonData.category) {
@@ -498,44 +501,38 @@ return Origo.ui.Component({
   name: 'fmereport',
   onInit() {
 
-    reportToolBox = Origo.ui.Element({
-      tagName: 'div',
-      cls: 'flex column control box bg-white overflow-hidden o-hidden filter-box',
-      style: {
-        left: '4rem',
-        top: '1rem',
-        padding: '0.5rem',
-        width: '15rem',
-        position: 'absolute',
-        'z-index': '-1'
-      }
-    });
-   
-    reportSelect = Origo.ui.Element({
-      tagName: 'select',
-      cls: 'width-100',
-      style: {
-        padding: '0.2rem',
-        'font-size': '0.8rem'
-      },
-      innerHTML: '<option value="">Välj rapport...</option>'
-    });
-
     reportToolTitle = Origo.ui.Element({
-      tagName: 'div',
-      cls: 'report-tool-header',
+      cls: 'justify-start margin-y-smaller margin-left text-weight-bold',
       innerHTML: 'Rapportverktyg',
       style: {
         cursor: 'move',
+        width: '100%'
       }
     });
      
-    closeButton = Origo.ui.Button({
-      cls: 'small round margin-top-smaller margin-bottom-auto margin-right-small icon-smaller grey-lightest',
-      icon: '#ic_close_24px',
-      style:{
-        float: 'right'
-      }
+    closeButtonToolBox = Origo.ui.Button({
+      cls: 'small round margin-top-smaller margin-bottom-auto margin-right-small icon-smallest grey-lightest margin-left-auto',
+      ariaLabel: 'Stäng',
+      icon: '#ic_close_24px'
+    });
+
+    reportToolBoxHeaderComponent = Origo.ui.Element({
+      cls: 'flex row justify-end no-select',
+      style: { 
+        width: '100%'
+      },
+      components: [reportToolTitle, closeButtonToolBox]
+
+    });
+
+    reportSelect = Origo.ui.Element({
+      tagName: 'select',
+      style: {
+        padding: '0.2rem',
+        'font-size': '0.8rem',
+        width: '100%'
+      },
+      innerHTML: '<option value="">Välj rapport...</option>'
     });
 
     //TODO: implementera knapp med funktionalitet för att hämta en gometri från kartan med getFeatureInfo för att använda i rapporten
@@ -546,6 +543,11 @@ return Origo.ui.Component({
     pointButton = Origo.ui.Button({
       cls: 'grow light text-smaller box-shadow padding-left-large',
       text: 'Rita en punkt'
+    });
+    
+    geometryButtonsComponent = Origo.ui.Element({
+      cls: 'margin-top-smallest margin-bottom-smallest',
+      components: [polygonButton,pointButton]
     });
 
     requestButton = Origo.ui.Button({
@@ -561,16 +563,25 @@ return Origo.ui.Component({
     });
 
     reportToolBoxContent = Origo.ui.Element({
-      tagName: 'div',
-      components: [ reportToolTitle,reportSelect,polygonButton,pointButton,requestButton],
+      cls: 'margin-left-small margin-right-small',
+      components: [reportSelect,geometryButtonsComponent,requestButton],
       style: {
         'user-select': 'none'
       }
     });
 
-    reportBoxContent = Origo.ui.Element({
-      tagName: 'div',
-      components: [ closeButton]
+    reportToolBox = Origo.ui.Element({
+      cls: 'absolute flex column control bg-white text-small overflow-hidden z-index-top no-select grab o-hidden',
+      style: {
+        left: '4rem',
+        top: '1rem'
+      },
+      components: [reportToolBoxHeaderComponent, reportToolBoxContent]
+    });
+
+    closeButtonReportBox = Origo.ui.Button({
+      cls: 'small round margin-top-smaller margin-bottom-auto margin-right-small icon-smaller grey-lightest margin-left-auto',
+      icon: '#ic_close_24px',
     });
 
     reportBox = Origo.ui.Element({
@@ -623,11 +634,8 @@ return Origo.ui.Component({
     document.getElementById(target).appendChild(dom.html(reportButton.render()));
     document.getElementById(viewer.getMain().getId()).appendChild(dom.html(reportToolBox.render()));
     document.getElementById(viewer.getMain().getId()).appendChild(dom.html(reportBox.render()));
-    document.getElementById(reportToolBox.getId()).appendChild(dom.html(reportToolBoxContent.render()));
-    document.getElementById(reportBox.getId()).appendChild(dom.html(reportBoxContent.render()));
-  
     document.getElementById(requestButton.getId()).addEventListener('click', () => fetchContent());
-    document.getElementById(closeButton.getId()).addEventListener('click', () => disableReportButton());
+    document.getElementById(closeButtonToolBox.getId()).addEventListener('click', () => disableReportButton());
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
