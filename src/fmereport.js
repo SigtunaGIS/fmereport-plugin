@@ -26,8 +26,8 @@ const Fmereport = function Fmereport({
   reportSelect,
   reportToolTitle,
   reportBox,
-  reportBoxContent,
-  closeButton,
+  closeButtonToolBox,
+  closeButtonReportBox,
   pointButton,
   target,
   viewer,
@@ -179,9 +179,11 @@ const createJsonTable = (jsonData) => {
     innerHTML: jsonData.title
   });
   const rubrikComponent = Origo.ui.Element({
-    cls: 'report-header flex row',
+    cls: 'report-header flex row sticky bg-white margin-left',
     style: {
       cursor: 'move',
+      top: '0',
+      'justify-content': 'space-between'
     },
     components: [rubrik, closeButtonReportBox]
   });
@@ -200,7 +202,7 @@ const createReportCategory = (categories) => {
 
   // Create a container element to hold the generated HTML
   const catContainer = document.createElement('div');
-  catContainer.className = 'report-container';
+  catContainer.className = 'report-container margin-left margin-right';
 
   const title = document.createElement('div');
   title.className = 'category-header';
@@ -525,14 +527,31 @@ return Origo.ui.Component({
 
     });
 
+    reportSelectText = Origo.ui.Element({
+      style: {
+        padding: '0.2rem',
+        'font-size': '0.8rem',
+        width: '100%'
+      },
+      innerHTML: '1. Välj en rapport:'
+    });
+
     reportSelect = Origo.ui.Element({
       tagName: 'select',
       style: {
         padding: '0.2rem',
         'font-size': '0.8rem',
         width: '100%'
+      }
+    });
+
+    geometryButtonsText = Origo.ui.Element({
+      style: {
+        padding: '0.2rem',
+        'font-size': '0.8rem',
+        width: '100%'
       },
-      innerHTML: '<option value="">Välj rapport...</option>'
+      innerHTML: '2. Rita in området eller punkten för rapporten:'
     });
 
     //TODO: implementera knapp med funktionalitet för att hämta en gometri från kartan med getFeatureInfo för att använda i rapporten
@@ -546,32 +565,34 @@ return Origo.ui.Component({
     });
     
     geometryButtonsComponent = Origo.ui.Element({
-      cls: 'margin-top-smallest margin-bottom-smallest',
+      cls: 'flex row margin-top-smallest margin-bottom-smallest',
       components: [polygonButton,pointButton]
     });
 
     requestButton = Origo.ui.Button({
-      cls: 'light rounded-large border text-smaller padding-right-large o-tooltip',
+      cls: 'light rounded-large border text-smaller',
       text: 'Skicka rapport',
       style: {
-        padding: '0.4rem',
-        margin: '0.2rem',
-        width: '10rem',
-        float: 'left',
-        'background-color': '#ebebeb'
+        'background-color': '#ebebeb',
+        width: '100%'
       }
+    });
+
+    requestButtonComponent = Origo.ui.Element({
+      cls: 'flex row margin-top-smaller margin-bottom-smallest',
+      components: [requestButton]
     });
 
     reportToolBoxContent = Origo.ui.Element({
       cls: 'margin-left-small margin-right-small',
-      components: [reportSelect,geometryButtonsComponent,requestButton],
+      components: [reportSelectText, reportSelect,geometryButtonsText, geometryButtonsComponent,requestButtonComponent],
       style: {
         'user-select': 'none'
       }
     });
 
     reportToolBox = Origo.ui.Element({
-      cls: 'absolute flex column control bg-white text-small overflow-hidden z-index-top no-select grab o-hidden',
+      cls: 'absolute flex column control bg-white text-small overflow-hidden z-index-top no-select o-hidden',
       style: {
         left: '4rem',
         top: '1rem'
@@ -590,7 +611,6 @@ return Origo.ui.Component({
       style: {
         left: '4rem',
         top: '1rem',
-        padding: '0.5rem',
         'max-width': '30rem',
         'overflow-x': 'auto',
         'overflow-y': 'auto',
@@ -645,4 +665,4 @@ return Origo.ui.Component({
 });
 };
 
-export default Fmereport;
+//export default Fmereport;
