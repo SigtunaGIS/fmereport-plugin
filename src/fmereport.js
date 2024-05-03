@@ -528,27 +528,25 @@ return Origo.ui.Component({
     });
 
     reportSelectText = Origo.ui.Element({
+      cls: 'text-smaller padding-left-smaller',
       style: {
-        padding: '0.2rem',
-        'font-size': '0.8rem',
         width: '100%'
       },
       innerHTML: '1. Välj en rapport:'
     });
 
     reportSelect = Origo.ui.Element({
+      cls: 'text-smaller',
       tagName: 'select',
       style: {
         padding: '0.2rem',
-        'font-size': '0.8rem',
         width: '100%'
       }
     });
 
     geometryButtonsText = Origo.ui.Element({
+      cls: 'text-smaller padding-left-smaller',
       style: {
-        padding: '0.2rem',
-        'font-size': '0.8rem',
         width: '100%'
       },
       innerHTML: '2. Rita in området eller punkten för rapporten:'
@@ -565,8 +563,16 @@ return Origo.ui.Component({
     });
     
     geometryButtonsComponent = Origo.ui.Element({
-      cls: 'flex row margin-top-smallest margin-bottom-smallest',
+      cls: 'flex row margin-bottom-small',
       components: [polygonButton,pointButton]
+    });
+
+    requestButtonText = Origo.ui.Element({
+      cls: 'flex row text-smaller margin-top-smaller margin-bottom-smaller padding-left-smaller',
+      style: {
+        width: '100%'
+      },
+      innerHTML: '3. Skicka rapport och invänta svar i nytt fönster:'
     });
 
     requestButton = Origo.ui.Button({
@@ -579,13 +585,13 @@ return Origo.ui.Component({
     });
 
     requestButtonComponent = Origo.ui.Element({
-      cls: 'flex row margin-top-smaller margin-bottom-smallest',
+      cls: 'flex row margin-bottom-small',
       components: [requestButton]
     });
 
     reportToolBoxContent = Origo.ui.Element({
       cls: 'margin-left-small margin-right-small',
-      components: [reportSelectText, reportSelect,geometryButtonsText, geometryButtonsComponent,requestButtonComponent],
+      components: [reportSelectText, reportSelect,geometryButtonsText, geometryButtonsComponent,requestButtonText,requestButtonComponent],
       style: {
         'user-select': 'none'
       }
@@ -660,9 +666,10 @@ return Origo.ui.Component({
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
     makeElementDraggable(document.getElementById(reportToolBox.getId()), document.getElementById(reportToolTitle.getId()));
+    
     this.dispatch('render');
   }
 });
 };
 
-//export default Fmereport;
+export default Fmereport;
