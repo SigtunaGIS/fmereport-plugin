@@ -473,6 +473,8 @@ const clearGeometry = () => {
 
 const toggleReportButton = () => {
   clearGeometry();
+  document.getElementById(reportToolBox.getId()).style.cssText = 'top: 1rem; left: 4rem;';
+  document.getElementById(reportBox.getId()).style.cssText = 'top: 1rem; left: 4rem; overflow-x: auto; overflow-y: auto; z-index: -1; user-select: none;';
   if (actLikeRadioButton) {
     const detail = {
       name: 'report',
