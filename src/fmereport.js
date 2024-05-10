@@ -23,22 +23,26 @@ const Fmereport = function Fmereport({
   reportButton,
   reportToolBox,
   reportToolBoxContent,
+  reportSelectText,
   reportSelect,
   reportToolTitle,
+  reportToolBoxHeaderComponent,
   reportBox,
   closeButtonToolBox,
   closeButtonReportBox,
+  geometryButtonsText,
+  polygonButton,
   pointButton,
+  geometryButtonsComponent,
+  requestButtonText,
+  requestButton,
+  requestButtonComponent,
   target,
   viewer,
   map,
-  requestButton,
-  isActive = false,
   activeTool = null,
   geom,
   coordinatesArray = [],
-  polygonButton,
-  actLikeRadioButton,
   jsonData,
   draw,
   reportHeader,
@@ -437,28 +441,19 @@ const makeElementDraggable= (element, header) => {
 
 const enableReportButton = () => {
   document.getElementById(reportButton.getId()).classList.add('active');
-  document.getElementById(reportButton.getId()).classList.remove('tooltip');
   document.getElementById(reportToolBox.getId()).classList.remove('o-hidden');
-
-  if (actLikeRadioButton) {
-    setActive(true);
-  }
 }
 
 
 const disableReportButton = () => {
   document.getElementById(reportBox.getId()).classList.add('o-hidden');
   document.getElementById(reportButton.getId()).classList.remove('active');
-  document.getElementById(reportButton.getId()).classList.add('tooltip');
   document.getElementById(reportToolBox.getId()).classList.add('o-hidden');
   if (map && draw) {
     map.removeInteraction(draw);
     draw.setActive(false);
   }
   clearGeometry();
-  if (actLikeRadioButton) {
-    setActive(false);
-  }
 }
 
 //Removes drawn geometry and empties coordinate(s) to be sent to FME
@@ -474,14 +469,8 @@ const clearGeometry = () => {
 const toggleReportButton = () => {
   clearGeometry();
   document.getElementById(reportToolBox.getId()).style.cssText = 'top: 1rem; left: 4rem;';
-  document.getElementById(reportBox.getId()).style.cssText = 'top: 1rem; left: 4rem; overflow-x: auto; overflow-y: auto; z-index: -1; user-select: none;';
-  if (actLikeRadioButton) {
-    const detail = {
-      name: 'report',
-      active: !isActive
-    };
-    viewer.dispatch('toggleClickInteraction', detail);
-  } else if (document.getElementById(reportButton.getId()).classList.contains('tooltip')) {
+  document.getElementById(reportBox.getId()).style.cssText = 'top: 1rem; left: 4rem; overflow-x: auto; overflow-y: auto; z-index: -1; user-select: none;'; 
+  if (!document.getElementById(reportButton.getId()).classList.contains('active')) {
     enableReportButton();
   } else {
     disableReportButton();
@@ -646,15 +635,6 @@ return Origo.ui.Component({
     map.addLayer(vector);
     this.addComponents([reportButton]);
     this.render();
-    if (actLikeRadioButton) {
-      viewer.on('toggleClickInteraction', (detail) => {
-        if (detail.name === 'report' && detail.active) {
-          enableReportButton();
-        } else {
-          disableReportButton();
-        }
-      });
-    }
     renderReportSelect();
   },
 
