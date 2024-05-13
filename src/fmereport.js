@@ -23,7 +23,6 @@ const Fmereport = function Fmereport({
   reportButton,
   reportToolBox,
   reportToolBoxContent,
-  reportSelectText,
   reportSelect,
   reportToolTitle,
   reportToolBoxHeaderComponent,
@@ -114,8 +113,8 @@ const fetchContent = async () => {
     catch (error) {
       console.error('Error fetching content:', error);
       Origo.ui.Modal({
-        title: error.message.includes('No data') ? "Resultat" : "Fel vid anrop",
-        content: error.message.includes('No data') ? "Ingen information hittades inom området" : "Något gick fel vid anrop, prova igen eller kontakta systemadministratör",
+        title: error.message.includes('Unexpected') || error.message.includes('No data') ? "Resultat" : "Fel vid anrop",
+        content: error.message.includes('Unexpected') || error.message.includes('No data') ? "Ingen information hittades inom området" : "Något gick fel vid anrop, prova igen eller kontakta systemadministratör",
         target: viewer.getId()
       });
       disableReportButton();
@@ -386,6 +385,8 @@ const mapInteraction = (drawTool) => {
       coordinatesArray.push(coordinates[0] +  ":" + coordinates[0+1]);
     }
     document.getElementById(activeButtonId).classList.remove('active');
+    document.getElementById(requestButton.getId()).classList.remove('disabled');
+    document.getElementById(requestButtonText.getId()).innerHTML = 'Geometri vald';
     enableDoubleClickZoom();
     toggleDraw(false);
     map.removeInteraction(draw);
@@ -463,12 +464,15 @@ const clearGeometry = () => {
   }
   geom = '';
   coordinatesArray = [];
+  //Set requestButton to disabled when no geometry is drawn  
+  document.getElementById(requestButton.getId()).classList.add('disabled');
+  document.getElementById(requestButtonText.getId()).innerHTML = 'Ingen geometri vald';
 }
 
 
 const toggleReportButton = () => {
   clearGeometry();
-  document.getElementById(reportToolBox.getId()).style.cssText = 'top: 1rem; left: 4rem;';
+  document.getElementById(reportToolBox.getId()).style.cssText = 'top: 1rem; left: 4rem; width: 16rem;';
   document.getElementById(reportBox.getId()).style.cssText = 'top: 1rem; left: 4rem; overflow-x: auto; overflow-y: auto; z-index: -1; user-select: none;'; 
   if (!document.getElementById(reportButton.getId()).classList.contains('active')) {
     enableReportButton();
@@ -480,6 +484,18 @@ const toggleReportButton = () => {
 //Creates report list from option from initiation
 const renderReportSelect= () => {
   const select = document.getElementById(reportSelect.getId());
+
+  //If only one report no need for chooseOption and activate geometry from start
+  if (reportNames.length > 1){
+    const chooseOption = document.createElement('option');
+    chooseOption.value = '';
+    chooseOption.text = 'Välj rapporttyp...';
+    select.appendChild(chooseOption);
+  }else{
+    document.getElementById(geometryButtonsText.getId()).classList.remove('faded');
+    document.getElementById(geometryButtonsComponent.getId()).classList.remove('faded');
+    document.getElementById(requestButtonText.getId()).classList.remove('faded');
+  }
  
   // Loop over each report name in the reportsArray
   reportNames.forEach((reportName, index) => {
@@ -495,7 +511,7 @@ return Origo.ui.Component({
   onInit() {
 
     reportToolTitle = Origo.ui.Element({
-      cls: 'justify-start margin-y-smaller margin-left text-weight-bold',
+      cls: 'justify-start margin-y-smaller margin-left text-weight-bold text-normal',
       innerHTML: 'Rapportverktyg',
       style: {
         cursor: 'move',
@@ -518,14 +534,6 @@ return Origo.ui.Component({
 
     });
 
-    reportSelectText = Origo.ui.Element({
-      cls: 'text-smaller padding-left-smaller',
-      style: {
-        width: '100%'
-      },
-      innerHTML: '1. Välj en rapport:'
-    });
-
     reportSelect = Origo.ui.Element({
       cls: 'text-smaller',
       tagName: 'select',
@@ -536,41 +544,42 @@ return Origo.ui.Component({
     });
 
     geometryButtonsText = Origo.ui.Element({
-      cls: 'text-smaller padding-left-smaller',
+      cls: 'text-smaller padding-left-smaller text-weight-bold margin-bottom-smaller faded',
       style: {
         width: '100%'
       },
-      innerHTML: '2. Rita in området eller punkten för rapporten:'
+      innerHTML: 'Markera geometri/yta'
     });
 
     //TODO: implementera knapp med funktionalitet för att hämta en gometri från kartan med getFeatureInfo för att använda i rapporten
     polygonButton = Origo.ui.Button({
-      cls: 'grow light text-smaller box-shadow padding-left-large',
-      text: 'Polygon'
+      cls: 'flex row icon-smaller text-smaller rounded-large margin-right toolbox-button',
+      text: 'Polygon',
+      icon: '#ic_timeline_24px',
     }); 
     pointButton = Origo.ui.Button({
-      cls: 'grow light text-smaller box-shadow padding-left-large',
-      text: 'Rita en punkt'
+      cls: 'flex row icon-smaller text-smaller rounded-large toolbox-button',
+      text: 'Rita punkt',
+      icon: '#ic_place_24px'
     });
     
     geometryButtonsComponent = Origo.ui.Element({
-      cls: 'flex row margin-bottom-small',
+      cls: 'flex row margin-bottom-small faded',
       components: [polygonButton,pointButton]
     });
 
     requestButtonText = Origo.ui.Element({
-      cls: 'flex row text-smaller margin-top-smaller margin-bottom-smaller padding-left-smaller',
+      cls: 'flex row text-smaller margin-top-smaller margin-bottom-smaller padding-left-smaller faded',
       style: {
         width: '100%'
       },
-      innerHTML: '3. Skicka rapport och invänta svar i nytt fönster:'
+      innerHTML: 'Ingen geometri vald'
     });
 
     requestButton = Origo.ui.Button({
-      cls: 'light rounded-large border text-smaller',
-      text: 'Skicka rapport',
+      cls: 'light rounded-large border text-smaller toolbox-button disabled',
+      text: 'Skapa rapport',
       style: {
-        'background-color': '#ebebeb',
         width: '100%'
       }
     });
@@ -582,7 +591,7 @@ return Origo.ui.Component({
 
     reportToolBoxContent = Origo.ui.Element({
       cls: 'margin-left-small margin-right-small',
-      components: [reportSelectText, reportSelect,geometryButtonsText, geometryButtonsComponent,requestButtonText,requestButtonComponent],
+      components: [reportSelect,geometryButtonsText, geometryButtonsComponent,requestButtonText,requestButtonComponent],
       style: {
         'user-select': 'none'
       }
@@ -604,7 +613,7 @@ return Origo.ui.Component({
 
     reportBox = Origo.ui.Element({
       tagName: 'div',
-      cls: 'flex column control box bg-white overflow-hidden o-hidden filter-box draggable',
+      cls: 'flex column control box bg-white o-hidden filter-box',
       style: {
         left: '4rem',
         top: '1rem',
@@ -648,6 +657,19 @@ return Origo.ui.Component({
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
     makeElementDraggable(document.getElementById(reportToolBox.getId()), document.getElementById(reportToolTitle.getId()));
+    
+
+    document.getElementById(reportSelect.getId()).addEventListener('change', () => {
+      if (document.getElementById(reportSelect.getId()).value !== '') {
+        document.getElementById(geometryButtonsText.getId()).classList.remove('faded');
+        document.getElementById(geometryButtonsComponent.getId()).classList.remove('faded');
+        document.getElementById(requestButtonText.getId()).classList.remove('faded');
+      } else {
+        document.getElementById(geometryButtonsText.getId()).classList.add('faded');
+        document.getElementById(geometryButtonsComponent.getId()).classList.add('faded');
+        document.getElementById(requestButtonText.getId()).classList.add('faded');
+      }
+    });
     
     this.dispatch('render');
   }
