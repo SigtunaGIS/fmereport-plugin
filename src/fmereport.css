@@ -7,7 +7,6 @@
 }
 .report-header{
   font-size: xx-large;
-  border-bottom: 1px solid rgb(184, 176, 176);
   margin-bottom: 5px;
 
 }
@@ -25,7 +24,7 @@
   border-bottom: 1px solid rgb(184, 176, 176);
   padding-bottom: 5px;
 }
-.report-item-wrapper:nth-last-child(2){
+.report-item-wrapper:nth-last-child(3){
   border-bottom-left-radius: 10px;
 }
 .report-item {
@@ -45,4 +44,15 @@
 }
 .report-button:last-child {
   border-bottom-right-radius: 10px;
+}
+.toolbox-button.disabled {
+  border: 1px solid rgb(167, 167, 167) !important;
+  background-color: rgb(231, 231, 231) !important;
+}
+.toolbox-button {
+  border: 1px solid rgb(61, 61, 61) !important;
+}
+.toolbox-button.active {
+  color: #008ff5;
+  border: 1px solid #008ff5 !important;
 }
