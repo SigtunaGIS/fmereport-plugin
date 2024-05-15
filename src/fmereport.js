@@ -1,3 +1,4 @@
+//import {jsPDF} from 'jspdf';
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
@@ -121,6 +122,8 @@ const fetchContent = async () => {
     }
     finally {
       document.body.style.cursor = 'default';
+      //Unblock function call to get pdf-export for every report
+      //downloadPDF(document.getElementById(reportBox.getId()));
     }};
 
 
@@ -197,6 +200,20 @@ const createJsonTable = (jsonData) => {
   for (const cat of jsonData.category) {
     container.appendChild(createReportCategory(cat));
   }
+  //Generate an export button
+  const exportEl = document.createElement('div');
+  exportEl.className = 'export-container';
+  const pdfExportButtonEl = Origo.ui.Button({
+    cls: 'light rounded-large border text-smaller toolbox-button\" data-html2canvas-ignore=\"true\"',
+    text: 'Skapa pdf',
+    style: {
+      display: 'block',
+      margin: 'auto',
+      width: '20%'
+    }
+  });
+  exportEl.innerHTML = pdfExportButtonEl.render();
+  container.appendChild(exportEl);
   // Return the container's HTML content
   return container.innerHTML;
 };
@@ -228,7 +245,7 @@ const createReportCategory = (categories) => {
 
 const createReportLink = (item) => {
   const linkEl = document.createElement('a');
-  linkEl.className = 'report-button';
+  linkEl.className = 'report-button-wrapper';
   if (item.link) {
     const linkButtonEl = createReportButton(item.icon);
     linkEl.href = item.link;
@@ -241,7 +258,7 @@ const createReportLink = (item) => {
 
 const createReportMap = (item) => {
   const mapEl = document.createElement('div');
-  mapEl.className = 'report-button';
+  mapEl.className = 'report-button-wrapper';
   if (item.geometry) {
     const mapButtonEl = createReportButton(); 
     item.id = mapButtonEl.getId(); 
@@ -252,7 +269,7 @@ const createReportMap = (item) => {
 
 const createReportButton = (icon) => {
   return Origo.ui.Button({
-    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip',
+    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip report-button\" data-html2canvas-ignore=\"true\"',
     tagName: 'div',
     icon: icon || '#fa-map-marker'
   });
@@ -480,6 +497,18 @@ const toggleReportButton = () => {
     disableReportButton();
   }
 }
+//TODO: Koppla denna funktion till klick på export-knapp i rapporten
+const downloadPDF = async function downloadPDF(el) {
+  const pdf = new Origo.jsPDF('p', 'pt', 'a4');
+  pdf.html(el,{
+    callback: function (pdf){
+      pdf.save(el.getElementsByClassName("report-header")[0].innerText);
+    },
+    autoPaging: 'text',
+    x:-45,
+    y:-10,
+  });
+};
 
 //Creates report list from option from initiation
 const renderReportSelect= () => {
@@ -607,13 +636,13 @@ return Origo.ui.Component({
     });
 
     closeButtonReportBox = Origo.ui.Button({
-      cls: 'small round margin-top-smaller margin-bottom-auto margin-right-small icon-smaller grey-lightest margin-left-auto',
+      cls: 'small round margin-top-smaller margin-bottom-auto margin-right-small icon-smaller grey-lightest margin-left-auto\" data-html2canvas-ignore=\"true\"',
       icon: '#ic_close_24px',
     });
 
     reportBox = Origo.ui.Element({
       tagName: 'div',
-      cls: 'flex column control box bg-white o-hidden filter-box',
+      cls: 'flex column control box bg-white o-hidden filter-box report-box',
       style: {
         left: '4rem',
         top: '1rem',
@@ -676,4 +705,4 @@ return Origo.ui.Component({
 });
 };
 
-export default Fmereport;
+//export default Fmereport;
