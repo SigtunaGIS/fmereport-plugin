@@ -122,8 +122,7 @@ const fetchContent = async () => {
     }
     finally {
       document.body.style.cursor = 'default';
-      //Unblock function call to get pdf-export for every report
-      //downloadPDF(document.getElementById(reportBox.getId()));
+      document.getElementById(pdfExportButtonEl.getId()).addEventListener('click', () => downloadPDF(document.getElementById(reportBox.getId())));
     }};
 
 
@@ -203,17 +202,11 @@ const createJsonTable = (jsonData) => {
   //Generate an export button
   const exportEl = document.createElement('div');
   exportEl.className = 'export-container';
-  const pdfExportButtonEl = Origo.ui.Button({
-    cls: 'light rounded-large border text-smaller toolbox-button\" data-html2canvas-ignore=\"true\"',
-    text: 'Skapa pdf',
-    style: {
-      display: 'block',
-      margin: 'auto',
-      width: '20%'
-    }
-  });
+
   exportEl.innerHTML = pdfExportButtonEl.render();
   container.appendChild(exportEl);
+  
+  
   // Return the container's HTML content
   return container.innerHTML;
 };
@@ -497,7 +490,7 @@ const toggleReportButton = () => {
     disableReportButton();
   }
 }
-//TODO: Koppla denna funktion till klick på export-knapp i rapporten
+
 const downloadPDF = async function downloadPDF(el) {
   const pdf = new Origo.jsPDF('p', 'pt', 'a4');
   pdf.html(el,{
@@ -580,11 +573,10 @@ return Origo.ui.Component({
       innerHTML: 'Markera geometri/yta'
     });
 
-    //TODO: implementera knapp med funktionalitet för att hämta en gometri från kartan med getFeatureInfo för att använda i rapporten
     polygonButton = Origo.ui.Button({
       cls: 'flex row icon-smaller text-smaller rounded-large margin-right toolbox-button',
       text: 'Polygon',
-      icon: '#ic_timeline_24px',
+      icon: '#ic_crop_square_24px',
     }); 
     pointButton = Origo.ui.Button({
       cls: 'flex row icon-smaller text-smaller rounded-large toolbox-button',
@@ -663,6 +655,17 @@ return Origo.ui.Component({
       tooltipText: 'Ta fram en rapport',
       tooltipPlacement: 'east'
     });
+
+    pdfExportButtonEl = Origo.ui.Button({
+      cls: 'flex row light rounded-large border text-smaller icon-smaller toolbox-button\" data-html2canvas-ignore=\"true\"',
+      text: 'Skapa pdf',
+      icon: '#ic_download_24px',
+      style: {
+        display: 'block',
+        margin: 'auto',
+        width: '20%'
+      }
+    });    
    
   },
 
