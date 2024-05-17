@@ -1,3 +1,4 @@
+import {jsPDF} from 'jspdf';
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
@@ -36,6 +37,7 @@ const Fmereport = function Fmereport({
   requestButtonText,
   requestButton,
   requestButtonComponent,
+  pdfExportButtonEl,
   target,
   viewer,
   map,
@@ -93,7 +95,7 @@ const fetchContent = async () => {
         document.getElementById(reportBox.getId()).removeChild(divs[0]); // This removes the first div inside the container
       }
       document.getElementById(reportBox.getId()).appendChild(dom.html(jsonAsHTML.render()));
-      makeElementDraggable(document.getElementById(reportBox.getId()), document.getElementById(reportHeader));
+      origo.api().getUtils().makeElementDraggable(document.getElementById(reportBox.getId()));
       document.getElementById(closeButtonReportBox.getId()).addEventListener('click', () => disableReportButton());
 
       //Add listener to buttons in report
@@ -121,6 +123,7 @@ const fetchContent = async () => {
     }
     finally {
       document.body.style.cursor = 'default';
+      document.getElementById(pdfExportButtonEl.getId()).addEventListener('click', () => downloadPDF(document.getElementById(reportBox.getId())));
     }};
 
 
@@ -182,9 +185,8 @@ const createJsonTable = (jsonData) => {
     innerHTML: jsonData.title
   });
   const rubrikComponent = Origo.ui.Element({
-    cls: 'report-header flex row sticky bg-white margin-left',
+    cls: 'report-header flex row sticky bg-white margin-left draggable',
     style: {
-      cursor: 'move',
       top: '0',
       'justify-content': 'space-between'
     },
@@ -197,6 +199,14 @@ const createJsonTable = (jsonData) => {
   for (const cat of jsonData.category) {
     container.appendChild(createReportCategory(cat));
   }
+  //Generate an export button
+  const exportEl = document.createElement('div');
+  exportEl.className = 'export-container';
+
+  exportEl.innerHTML = pdfExportButtonEl.render();
+  container.appendChild(exportEl);
+  
+  
   // Return the container's HTML content
   return container.innerHTML;
 };
@@ -228,7 +238,7 @@ const createReportCategory = (categories) => {
 
 const createReportLink = (item) => {
   const linkEl = document.createElement('a');
-  linkEl.className = 'report-button';
+  linkEl.className = 'report-button-wrapper';
   if (item.link) {
     const linkButtonEl = createReportButton(item.icon);
     linkEl.href = item.link;
@@ -241,7 +251,7 @@ const createReportLink = (item) => {
 
 const createReportMap = (item) => {
   const mapEl = document.createElement('div');
-  mapEl.className = 'report-button';
+  mapEl.className = 'report-button-wrapper';
   if (item.geometry) {
     const mapButtonEl = createReportButton(); 
     item.id = mapButtonEl.getId(); 
@@ -252,7 +262,7 @@ const createReportMap = (item) => {
 
 const createReportButton = (icon) => {
   return Origo.ui.Button({
-    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip',
+    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip report-button\" data-html2canvas-ignore=\"true\"',
     tagName: 'div',
     icon: icon || '#fa-map-marker'
   });
@@ -396,50 +406,6 @@ const mapInteraction = (drawTool) => {
   }
 }
 
-const makeElementDraggable= (element, header) => {
-  // The initial x and y positions of the mouse
-  let mouseX = 0, mouseY = 0;
-
-  // Function to handle the dragging movement
-  function onMouseMove(event) {
-    // Calculate the new position
-    const dx = event.clientX - mouseX;
-    const dy = event.clientY - mouseY;
-
-    // Set the new position of the element
-    element.style.left = (element.offsetLeft + dx) + 'px';
-    element.style.top = (element.offsetTop + dy) + 'px';
-
-    // Update the mouse position
-    mouseX = event.clientX;
-    mouseY = event.clientY;
-  }
-
-  // Function to stop the dragging
-  function onMouseUp() {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  }
-
-  // Function to start the dragging
-  function onMouseDown(event) {
-    if (!header.contains(event.target)) {
-      return;
-    }
-
-    // Record the initial mouse position
-    mouseX = event.clientX;
-    mouseY = event.clientY;
-
-    // Attach event listeners to handle the dragging
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  }
-
-  // Attach the mousedown event listener to start dragging
-  element.addEventListener('mousedown', onMouseDown);
-}
-
 const enableReportButton = () => {
   document.getElementById(reportButton.getId()).classList.add('active');
   document.getElementById(reportToolBox.getId()).classList.remove('o-hidden');
@@ -481,6 +447,19 @@ const toggleReportButton = () => {
   }
 }
 
+const downloadPDF = async function downloadPDF(el) {
+  const pdf = new Origo.jsPDF('p', 'pt', 'a4');
+
+  pdf.html(el,{
+    callback: function (pdf){
+      pdf.save(el.getElementsByClassName("report-header")[0].innerText);
+    },
+    autoPaging: 'text',
+    x: (-(el.getBoundingClientRect().left)) + 20,
+    y: (-(el.getBoundingClientRect().top)) + 20,
+  });
+};
+
 //Creates report list from option from initiation
 const renderReportSelect= () => {
   const select = document.getElementById(reportSelect.getId());
@@ -514,7 +493,6 @@ return Origo.ui.Component({
       cls: 'justify-start margin-y-smaller margin-left text-weight-bold text-normal',
       innerHTML: 'Rapportverktyg',
       style: {
-        cursor: 'move',
         width: '100%'
       }
     });
@@ -526,8 +504,9 @@ return Origo.ui.Component({
     });
 
     reportToolBoxHeaderComponent = Origo.ui.Element({
-      cls: 'flex row justify-end no-select',
+      cls: 'flex row justify-end no-select draggable',
       style: { 
+        cursor: 'hand',
         width: '100%'
       },
       components: [reportToolTitle, closeButtonToolBox]
@@ -551,11 +530,10 @@ return Origo.ui.Component({
       innerHTML: 'Markera geometri/yta'
     });
 
-    //TODO: implementera knapp med funktionalitet för att hämta en gometri från kartan med getFeatureInfo för att använda i rapporten
     polygonButton = Origo.ui.Button({
       cls: 'flex row icon-smaller text-smaller rounded-large margin-right toolbox-button',
       text: 'Polygon',
-      icon: '#ic_timeline_24px',
+      icon: '#ic_crop_square_24px',
     }); 
     pointButton = Origo.ui.Button({
       cls: 'flex row icon-smaller text-smaller rounded-large toolbox-button',
@@ -607,13 +585,13 @@ return Origo.ui.Component({
     });
 
     closeButtonReportBox = Origo.ui.Button({
-      cls: 'small round margin-top-smaller margin-bottom-auto margin-right-small icon-smaller grey-lightest margin-left-auto',
+      cls: 'small round margin-top-smaller margin-bottom-auto margin-right-small icon-smaller grey-lightest margin-left-auto\" data-html2canvas-ignore=\"true\"',
       icon: '#ic_close_24px',
     });
 
     reportBox = Origo.ui.Element({
       tagName: 'div',
-      cls: 'flex column control box bg-white o-hidden filter-box',
+      cls: 'flex column control box bg-white o-hidden filter-box report-box',
       style: {
         left: '4rem',
         top: '1rem',
@@ -634,6 +612,17 @@ return Origo.ui.Component({
       tooltipText: 'Ta fram en rapport',
       tooltipPlacement: 'east'
     });
+
+    pdfExportButtonEl = Origo.ui.Button({
+      cls: 'flex row light rounded-large border text-smaller icon-smaller toolbox-button\" data-html2canvas-ignore=\"true\"',
+      text: 'Skapa pdf',
+      icon: '#ic_download_24px',
+      style: {
+        display: 'block',
+        margin: 'auto',
+        width: '20%'
+      }
+    });    
    
   },
 
@@ -656,8 +645,7 @@ return Origo.ui.Component({
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
-    makeElementDraggable(document.getElementById(reportToolBox.getId()), document.getElementById(reportToolTitle.getId()));
-    
+    origo.api().getUtils().makeElementDraggable(document.getElementById(reportToolBox.getId()));
 
     document.getElementById(reportSelect.getId()).addEventListener('change', () => {
       if (document.getElementById(reportSelect.getId()).value !== '') {
