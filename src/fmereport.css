@@ -4,6 +4,7 @@
   border-radius: 10px;
   grid-template-columns: 10fr 1fr 1fr;
   margin-bottom: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 .report-header{
   font-size: xx-large;
