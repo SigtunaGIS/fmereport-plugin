@@ -95,7 +95,7 @@ const fetchContent = async () => {
         document.getElementById(reportBox.getId()).removeChild(divs[0]); // This removes the first div inside the container
       }
       document.getElementById(reportBox.getId()).appendChild(dom.html(jsonAsHTML.render()));
-      makeElementDraggable(document.getElementById(reportBox.getId()), document.getElementById(reportHeader));
+      origo.api().getUtils().makeElementDraggable(document.getElementById(reportBox.getId()));
       document.getElementById(closeButtonReportBox.getId()).addEventListener('click', () => disableReportButton());
 
       //Add listener to buttons in report
@@ -185,9 +185,8 @@ const createJsonTable = (jsonData) => {
     innerHTML: jsonData.title
   });
   const rubrikComponent = Origo.ui.Element({
-    cls: 'report-header flex row sticky bg-white margin-left',
+    cls: 'report-header flex row sticky bg-white margin-left draggable',
     style: {
-      cursor: 'move',
       top: '0',
       'justify-content': 'space-between'
     },
@@ -407,50 +406,6 @@ const mapInteraction = (drawTool) => {
   }
 }
 
-const makeElementDraggable= (element, header) => {
-  // The initial x and y positions of the mouse
-  let mouseX = 0, mouseY = 0;
-
-  // Function to handle the dragging movement
-  function onMouseMove(event) {
-    // Calculate the new position
-    const dx = event.clientX - mouseX;
-    const dy = event.clientY - mouseY;
-
-    // Set the new position of the element
-    element.style.left = (element.offsetLeft + dx) + 'px';
-    element.style.top = (element.offsetTop + dy) + 'px';
-
-    // Update the mouse position
-    mouseX = event.clientX;
-    mouseY = event.clientY;
-  }
-
-  // Function to stop the dragging
-  function onMouseUp() {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  }
-
-  // Function to start the dragging
-  function onMouseDown(event) {
-    if (!header.contains(event.target)) {
-      return;
-    }
-
-    // Record the initial mouse position
-    mouseX = event.clientX;
-    mouseY = event.clientY;
-
-    // Attach event listeners to handle the dragging
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  }
-
-  // Attach the mousedown event listener to start dragging
-  element.addEventListener('mousedown', onMouseDown);
-}
-
 const enableReportButton = () => {
   document.getElementById(reportButton.getId()).classList.add('active');
   document.getElementById(reportToolBox.getId()).classList.remove('o-hidden');
@@ -538,7 +493,6 @@ return Origo.ui.Component({
       cls: 'justify-start margin-y-smaller margin-left text-weight-bold text-normal',
       innerHTML: 'Rapportverktyg',
       style: {
-        cursor: 'move',
         width: '100%'
       }
     });
@@ -550,8 +504,9 @@ return Origo.ui.Component({
     });
 
     reportToolBoxHeaderComponent = Origo.ui.Element({
-      cls: 'flex row justify-end no-select',
+      cls: 'flex row justify-end no-select draggable',
       style: { 
+        cursor: 'hand',
         width: '100%'
       },
       components: [reportToolTitle, closeButtonToolBox]
@@ -690,8 +645,7 @@ return Origo.ui.Component({
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
     
-    makeElementDraggable(document.getElementById(reportToolBox.getId()), document.getElementById(reportToolTitle.getId()));
-    
+    origo.api().getUtils().makeElementDraggable(document.getElementById(reportToolBox.getId()));
 
     document.getElementById(reportSelect.getId()).addEventListener('change', () => {
       if (document.getElementById(reportSelect.getId()).value !== '') {
