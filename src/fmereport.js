@@ -1,4 +1,4 @@
-//import {jsPDF} from 'jspdf';
+import {jsPDF} from 'jspdf';
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
@@ -37,6 +37,7 @@ const Fmereport = function Fmereport({
   requestButtonText,
   requestButton,
   requestButtonComponent,
+  pdfExportButtonEl,
   target,
   viewer,
   map,
@@ -493,13 +494,14 @@ const toggleReportButton = () => {
 
 const downloadPDF = async function downloadPDF(el) {
   const pdf = new Origo.jsPDF('p', 'pt', 'a4');
+
   pdf.html(el,{
     callback: function (pdf){
       pdf.save(el.getElementsByClassName("report-header")[0].innerText);
     },
     autoPaging: 'text',
-    x:-45,
-    y:-10,
+    x: (-(el.getBoundingClientRect().left)) + 20,
+    y: (-(el.getBoundingClientRect().top)) + 20,
   });
 };
 
@@ -708,4 +710,4 @@ return Origo.ui.Component({
 });
 };
 
-//export default Fmereport;
+export default Fmereport;
