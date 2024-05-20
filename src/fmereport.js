@@ -46,7 +46,6 @@ const Fmereport = function Fmereport({
   coordinatesArray = [],
   jsonData,
   draw,
-  reportHeader,
   layerGid;  
 
 //Initiate fetch from FME Flow ( or other source)
@@ -448,7 +447,7 @@ const toggleReportButton = () => {
 }
 
 const downloadPDF = async function downloadPDF(el) {
-  const pdf = new Origo.jsPDF('p', 'pt', 'a4');
+  const pdf = new jsPDF('p', 'pt', 'a4');
 
   pdf.html(el,{
     callback: function (pdf){
