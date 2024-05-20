@@ -191,7 +191,7 @@ const createJsonTable = (jsonData) => {
     },
     components: [rubrik, closeButtonReportBox]
   });
-  reportHeader = rubrikComponent.getId()
+  const reportHeader = rubrikComponent.getId()
   container.innerHTML = rubrikComponent.render();
 
   //Generate categories
