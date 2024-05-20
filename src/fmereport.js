@@ -171,7 +171,7 @@ const onRenderComplete = (itemCoordinate, layerName, layerGid) =>{
       //Show infowindow and zoom to object
       if( (result.length > 0)) {
         //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
-        origo.api().getFeatureinfo().render(result, origo.getConfig().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
+        origo.api().getFeatureinfo().render(result, viewer.getViewerOptions().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
         map.getView().fit(result[0].feature.getGeometry().getExtent());
       }
     });
@@ -185,7 +185,7 @@ const createJsonTable = (jsonData) => {
     innerHTML: jsonData.title
   });
   const rubrikComponent = Origo.ui.Element({
-    cls: 'report-header flex row sticky bg-white margin-left draggable',
+    cls: 'report-header flex row sticky bg-white margin-left draggable grab',
     style: {
       top: '0',
       'justify-content': 'space-between'
@@ -504,7 +504,7 @@ return Origo.ui.Component({
     });
 
     reportToolBoxHeaderComponent = Origo.ui.Element({
-      cls: 'flex row justify-end no-select draggable',
+      cls: 'flex row justify-end no-select draggable grab',
       style: { 
         cursor: 'hand',
         width: '100%'
