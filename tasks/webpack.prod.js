@@ -16,7 +16,8 @@ module.exports = merge(common, {
     filename: 'fmereport.min.js',
     libraryTarget: 'var',
     libraryExport: 'default',
-    library: 'Fmereport'
+    library: 'Fmereport',
+    chunkFormat: false
   },
   devtool: false,
   mode: 'production',
