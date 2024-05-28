@@ -438,7 +438,7 @@ const clearGeometry = () => {
 const toggleReportButton = () => {
   clearGeometry();
   document.getElementById(reportToolBox.getId()).style.cssText = 'top: 1rem; left: 4rem; width: 16rem;';
-  document.getElementById(reportBox.getId()).style.cssText = 'top: 1rem; left: 4rem; overflow-x: auto; overflow-y: auto; z-index: -1; user-select: none;'; 
+  document.getElementById(reportBox.getId()).style.cssText = 'top: 1rem; left: 4rem; overflow-x: auto; overflow-y: auto; z-index: -1; user-select: none; width: 100%; max-width:40rem;'; 
   if (!document.getElementById(reportButton.getId()).classList.contains('active')) {
     enableReportButton();
   } else {
@@ -453,7 +453,12 @@ const downloadPDF = async function downloadPDF(el) {
     callback: function (pdf){
       pdf.save(el.getElementsByClassName("report-header")[0].innerText);
     },
+    html2canvas: {
+      scale: 0.8,
+      logging:false
+    },
     autoPaging: 'text',
+    margin: [0,0,0,30],
     x: (-(el.getBoundingClientRect().left)) + 20,
     y: (-(el.getBoundingClientRect().top)) + 20,
   });
@@ -589,7 +594,6 @@ return Origo.ui.Component({
       style: {
         left: '4rem',
         top: '1rem',
-        'max-width': '30rem',
         'overflow-x': 'auto',
         'overflow-y': 'auto',
         'z-index': '-1',
