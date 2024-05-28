@@ -530,11 +530,11 @@ return Origo.ui.Component({
     });
 
     polygonButton = Origo.ui.Button({
-      cls: 'flex row icon-smaller round light box-shadow margin-right tooltip',
+      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip',
       icon: '#ic_crop_square_24px',
     }); 
     pointButton = Origo.ui.Button({
-      cls: 'flex row icon-smaller round light box-shadow',
+      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip',
       icon: '#ic_place_24px'
     });
     
@@ -608,9 +608,8 @@ return Origo.ui.Component({
     });
 
     pdfExportButtonEl = Origo.ui.Button({
-      cls: 'flex row light rounded-large border text-smaller icon-smaller toolbox-button\" data-html2canvas-ignore=\"true\"',
+      cls: 'light rounded-large text-smaller box-shadow\" data-html2canvas-ignore=\"true\"',
       text: 'Skapa pdf',
-      icon: '#ic_download_24px',
       style: {
         display: 'block',
         margin: 'auto',
