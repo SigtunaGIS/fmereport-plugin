@@ -395,7 +395,7 @@ const mapInteraction = (drawTool) => {
     }
     document.getElementById(activeButtonId).classList.remove('active');
     document.getElementById(requestButton.getId()).classList.remove('disabled');
-    document.getElementById(requestButtonText.getId()).innerHTML = 'Geometri vald';
+    document.getElementById(requestButtonText.getId()).innerHTML = 'Markering gjord';
     enableDoubleClickZoom();
     toggleDraw(false);
     map.removeInteraction(draw);
@@ -430,8 +430,8 @@ const clearGeometry = () => {
   geom = '';
   coordinatesArray = [];
   //Set requestButton to disabled when no geometry is drawn  
-  document.getElementById(requestButton.getId()).classList.add('disabled');
-  document.getElementById(requestButtonText.getId()).innerHTML = 'Ingen geometri vald';
+  //document.getElementById(requestButton.getId()).classList.add('disabled');
+  document.getElementById(requestButtonText.getId()).innerHTML = 'Ingen markering';
 }
 
 
@@ -513,7 +513,7 @@ return Origo.ui.Component({
     });
 
     reportSelect = Origo.ui.Element({
-      cls: 'text-smaller',
+      cls: 'text-smaller margin-bottom-large',
       tagName: 'select',
       style: {
         padding: '0.2rem',
@@ -526,17 +526,15 @@ return Origo.ui.Component({
       style: {
         width: '100%'
       },
-      innerHTML: 'Markera geometri/yta'
+      innerHTML: 'Markera i kartan'
     });
 
     polygonButton = Origo.ui.Button({
-      cls: 'flex row icon-smaller text-smaller rounded-large margin-right toolbox-button',
-      text: 'Polygon',
+      cls: 'flex row icon-smaller round light box-shadow margin-right tooltip',
       icon: '#ic_crop_square_24px',
     }); 
     pointButton = Origo.ui.Button({
-      cls: 'flex row icon-smaller text-smaller rounded-large toolbox-button',
-      text: 'Rita punkt',
+      cls: 'flex row icon-smaller round light box-shadow',
       icon: '#ic_place_24px'
     });
     
@@ -546,23 +544,20 @@ return Origo.ui.Component({
     });
 
     requestButtonText = Origo.ui.Element({
-      cls: 'flex row text-smaller margin-top-smaller margin-bottom-smaller padding-left-smaller faded',
-      style: {
-        width: '100%'
-      },
+      cls: 'flex row text-smaller margin-top-smaller margin-bottom-large padding-left-smaller faded',
       innerHTML: 'Ingen geometri vald'
     });
 
     requestButton = Origo.ui.Button({
-      cls: 'light rounded-large border text-smaller toolbox-button disabled',
-      text: 'Skapa rapport',
-      style: {
-        width: '100%'
-      }
+      cls: 'light rounded-large text-smaller box-shadow',
+      text: 'Skapa rapport'
     });
 
     requestButtonComponent = Origo.ui.Element({
-      cls: 'flex row margin-bottom-small',
+      cls: 'flex row margin-bottom-large',
+      style: {
+        'justify-content': 'center'
+      },
       components: [requestButton]
     });
 
@@ -643,7 +638,7 @@ return Origo.ui.Component({
     document.getElementById(closeButtonToolBox.getId()).addEventListener('click', () => disableReportButton());
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
-    
+
     origo.api().getUtils().makeElementDraggable(document.getElementById(reportToolBox.getId()));
 
     document.getElementById(reportSelect.getId()).addEventListener('change', () => {
