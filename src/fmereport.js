@@ -429,8 +429,7 @@ const clearGeometry = () => {
   }
   geom = '';
   coordinatesArray = [];
-  //Set requestButton to disabled when no geometry is drawn  
-  //document.getElementById(requestButton.getId()).classList.add('disabled');
+  //Set request text to "no geometry" when geometry is removed
   document.getElementById(requestButtonText.getId()).innerHTML = 'Ingen markering';
 }
 
@@ -472,7 +471,7 @@ const renderReportSelect= () => {
   if (reportNames.length > 1){
     const chooseOption = document.createElement('option');
     chooseOption.value = '';
-    chooseOption.text = 'Välj rapporttyp...';
+    chooseOption.text = 'Välj...';
     select.appendChild(chooseOption);
   }else{
     document.getElementById(geometryButtonsText.getId()).classList.remove('faded');
@@ -508,13 +507,18 @@ return Origo.ui.Component({
     });
 
     reportToolBoxHeaderComponent = Origo.ui.Element({
-      cls: 'flex row justify-end no-select draggable grab',
+      cls: 'flex row justify-end no-select draggable grab padding-bottom-large',
       style: { 
         cursor: 'hand',
         width: '100%'
       },
       components: [reportToolTitle, closeButtonToolBox]
 
+    });
+    
+    reportSelectText = Origo.ui.Element({
+      cls: 'text-smaller padding-left-smaller text-weight-bold margin-bottom-smaller padding-bottom-small',
+      innerHTML: 'Välj rapport'
     });
 
     reportSelect = Origo.ui.Element({
@@ -544,18 +548,22 @@ return Origo.ui.Component({
     });
     
     geometryButtonsComponent = Origo.ui.Element({
-      cls: 'flex row margin-bottom-small faded',
+      cls: 'flex row margin-bottom-small padding-bottom-small faded',
       components: [polygonButton,pointButton]
     });
 
     requestButtonText = Origo.ui.Element({
-      cls: 'flex row text-smaller margin-top-smaller margin-bottom-large padding-left-smaller faded',
+      cls: 'flex row text-smallest margin-top-smaller margin-bottom-large padding-left-smaller faded',
       innerHTML: 'Ingen geometri vald'
     });
 
     requestButton = Origo.ui.Button({
       cls: 'light rounded-large text-smaller box-shadow',
-      text: 'Skapa rapport'
+      text: 'Skapa rapport',
+      style: {
+        padding: '0.2rem',
+        width:'50%'
+      }
     });
 
     requestButtonComponent = Origo.ui.Element({
@@ -568,7 +576,7 @@ return Origo.ui.Component({
 
     reportToolBoxContent = Origo.ui.Element({
       cls: 'margin-left-small margin-right-small',
-      components: [reportSelect,geometryButtonsText, geometryButtonsComponent,requestButtonText,requestButtonComponent],
+      components: [reportSelectText,reportSelect,geometryButtonsText,geometryButtonsComponent,requestButtonText,requestButtonComponent],
       style: {
         'user-select': 'none'
       }
