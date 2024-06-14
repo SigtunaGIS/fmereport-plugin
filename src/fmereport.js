@@ -24,6 +24,7 @@ const Fmereport = function Fmereport({
   reportButton,
   reportToolBox,
   reportToolBoxContent,
+  reportSelectText,
   reportSelect,
   reportToolTitle,
   reportToolBoxHeaderComponent,
