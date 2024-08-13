@@ -135,9 +135,9 @@ const onClickItem = (e) => {
   const category = jsonData.category.find(c => c.item.some(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id));
   const item = category.item.find(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id);
 
-  origo.api().getLayer(category.layerName).setVisible(true);
+  origo.api().getLayer(item.layerName).setVisible(true);
   itemCoordinate = JSON.parse(item.geometry);
-  layerName = category.layerName;
+  layerName = item.layerName;
   layerGid = item.gid;
 
   map.once('rendercomplete', () => onRenderComplete(itemCoordinate, layerName, layerGid));
