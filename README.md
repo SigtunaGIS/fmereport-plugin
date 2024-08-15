@@ -27,7 +27,8 @@ In the Origo project index.html import swiper component
         var fmereport = Fmereport({
 			reportNames: ['Byggrapport', 'Another report title'],
 			reportUrls: ['urlToFMEFlow/fmedatastreaming/SEIAWC/Byggrapport.fmw?token=token', 'Another URL'],
-			reportIcon: '#fa-info'
+			reportIcon: '#fa-info',
+  			pickGeomLayer = 'layerName in origo config, activates pick geometry button on layer'
 			});
         viewer.addComponent(fmereport);
       });
