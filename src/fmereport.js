@@ -2,11 +2,13 @@ import {jsPDF} from 'jspdf';
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
-  reportIcon = '#fa-info-circle'
+  reportIcon = '#fa-info-circle',
+  pickGeomLayer = 'layerName in origo config, activates pick geometry button on layer'
 } = {}) {
 
   const
   dom = Origo.ui.dom,
+  format = new Origo.ol.format.WKT(),
   source = new Origo.ol.source.Vector(),
   vector = new Origo.ol.layer.Vector({
   group: 'none',
@@ -17,6 +19,7 @@ const Fmereport = function Fmereport({
   styleName: 'origoStylefunction'
 });
   let 
+  layerGeomName = pickGeomLayer,
   content,
   layerName,
   itemCoordinate,
@@ -34,6 +37,7 @@ const Fmereport = function Fmereport({
   geometryButtonsText,
   polygonButton,
   pointButton,
+  pickGeometryButton,
   geometryButtonsComponent,
   requestButtonText,
   requestButton,
@@ -43,6 +47,7 @@ const Fmereport = function Fmereport({
   viewer,
   map,
   activeTool = null,
+  pickActive = false,
   geom,
   coordinatesArray = [],
   jsonData,
@@ -346,10 +351,14 @@ const mapInteraction = (drawTool) => {
   const toolButtonMapping = {
     'Polygon': polygonButton.getId(),
     'Point': pointButton.getId(),
+    'Pick': pickGeometryButton.getId()
     // Add more tools here as needed, for example:
     // 'Pick': pickGeometryButton.getId(),
   };
   let activeButtonId = toolButtonMapping[drawTool];
+  if (drawTool === 'Pick') {
+    pickActive = true;
+  }
  // If draw is active remove the existing interaction
   if (draw) {
     map.removeInteraction(draw);
@@ -367,15 +376,21 @@ const mapInteraction = (drawTool) => {
   }
   else{
     activeTool = drawTool;
-    clearGeometry()
+    clearGeometry();
     document.getElementById(activeButtonId).classList.add('active');
     toggleDraw(true);
     // Create a new draw interaction with the selected draw tool
+    if(!pickActive){
     draw = new Origo.ol.interaction.Draw({
       source: source,
       type: drawTool 
     });
-  
+    }
+    else{
+      draw = new Origo.ol.interaction.Draw({
+        type: 'Point'
+      });
+    }
     map.addInteraction(draw);
     draw.setActive(true);
     
@@ -385,14 +400,33 @@ const mapInteraction = (drawTool) => {
     let coordinates = geom.flatCoordinates;
     coordinatesArray = [];
     //Creates coordinateArray for FME Flow
-    if(drawTool == 'Polygon'){
-      for (let i = 0; i < coordinates.length-2; i++) {
-        coordinatesArray.push(coordinates[i] +  ":" + coordinates[i+1])
-        i++
-      }
+     if (pickActive) {
+      //layerGeomName is defined in the config file and source is fetched from the layer
+      let response = fetch(origo.api().getLayer('fir_fastighet_areal_y').getSource()._options.url + '?service=WFS&version=1.1.0&request=GetFeature&typeName=' + layerGeomName +'&outputFormat=application/json&srsname=EPSG:3011&maxfeatures=1&cql_filter=INTERSECTS(geom, POINT (' +coordinates[1] + ' ' + coordinates[0] + '))')
+        .then(response => response.json())
+        .then(data => {
+          const responseData = data;
+          let responseGeom;
+          if (responseData.features.length === 1) {
+            responseGeom = new Origo.ol.geom.Polygon(responseData.features[0].geometry.coordinates);
+          }
+          else{
+            responseGeom = new Origo.ol.geom.MultiPolygon(responseData.features[0].geometry.coordinates)
+          }
+          const olFeature = new Origo.ol.Feature({
+            geometry: responseGeom
+          });
+        coordinatesArray = format.writeGeometry(olFeature.getGeometry());
+        source.addFeature(olFeature);
+      })
+        .catch(error => {
+          // Handle any errors
+          console.error(error);
+        });
+      pickActive = false;
     }
     else {
-      coordinatesArray.push(coordinates[0] +  ":" + coordinates[0+1]);
+      coordinatesArray = format.writeGeometry(geom);
     }
     document.getElementById(activeButtonId).classList.remove('active');
     document.getElementById(requestButton.getId()).classList.remove('disabled');
@@ -547,6 +581,10 @@ return Origo.ui.Component({
       cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip',
       icon: '#ic_place_24px'
     });
+    pickGeometryButton = Origo.ui.Button({
+      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip',
+      icon: '#fa-mouse-pointer'
+    });
     
     geometryButtonsComponent = Origo.ui.Element({
       cls: 'flex row margin-bottom-small padding-bottom-small faded',
@@ -650,6 +688,10 @@ return Origo.ui.Component({
     document.getElementById(closeButtonToolBox.getId()).addEventListener('click', () => disableReportButton());
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
+    if(origo.api().getLayer(layerGeomName)){
+      document.getElementById(geometryButtonsComponent.getId()).appendChild(dom.html(pickGeometryButton.render()));
+      document.getElementById(pickGeometryButton.getId()).addEventListener('click', () => mapInteraction('Pick'));
+    }
 
     origo.api().getUtils().makeElementDraggable(document.getElementById(reportToolBox.getId()));
 
