@@ -402,17 +402,11 @@ const mapInteraction = (drawTool) => {
     //Creates coordinateArray for FME Flow
      if (pickActive) {
       //layerGeomName is defined in the config file and source is fetched from the layer
-      let response = fetch(origo.api().getLayer('fir_fastighet_areal_y').getSource()._options.url + '?service=WFS&version=1.1.0&request=GetFeature&typeName=' + layerGeomName +'&outputFormat=application/json&srsname=EPSG:3011&maxfeatures=1&cql_filter=INTERSECTS(geom, POINT (' +coordinates[1] + ' ' + coordinates[0] + '))')
+      let response = fetch(origo.api().getLayer(layerGeomName).getSource()._options.url + '?service=WFS&version=1.1.0&request=GetFeature&typeName=' + layerGeomName +'&outputFormat=application/json&srsname=EPSG:3011&maxfeatures=1&cql_filter=INTERSECTS(geom, POINT (' +coordinates[1] + ' ' + coordinates[0] + '))')
         .then(response => response.json())
         .then(data => {
           const responseData = data;
-          let responseGeom;
-          if (responseData.features.length === 1) {
-            responseGeom = new Origo.ol.geom.Polygon(responseData.features[0].geometry.coordinates);
-          }
-          else{
-            responseGeom = new Origo.ol.geom.MultiPolygon(responseData.features[0].geometry.coordinates)
-          }
+          let responseGeom = new Origo.ol.geom[responseData.features[0].geometry.type](responseData.features[0].geometry.coordinates)
           const olFeature = new Origo.ol.Feature({
             geometry: responseGeom
           });
@@ -574,16 +568,22 @@ return Origo.ui.Component({
     });
 
     polygonButton = Origo.ui.Button({
-      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip',
+      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip relative',
       icon: '#ic_crop_square_24px',
+      tooltipText: 'Rita en yta',
+      tooltipPlacement: 'east'      
     }); 
     pointButton = Origo.ui.Button({
-      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip',
-      icon: '#ic_place_24px'
+      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip relative',
+      icon: '#ic_place_24px',
+      tooltipText: 'Rita en punkt',
+      tooltipPlacement: 'east'      
     });
     pickGeometryButton = Origo.ui.Button({
-      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip',
-      icon: '#fa-mouse-pointer'
+      cls: 'flex row padding-small icon-smaller round light box-shadow margin-right tooltip relative',
+      icon: '#fa-mouse-pointer',
+      tooltipText: 'Välj objekt',
+      tooltipPlacement: 'east'      
     });
     
     geometryButtonsComponent = Origo.ui.Element({
