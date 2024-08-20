@@ -100,7 +100,7 @@ const fetchContent = async () => {
         document.getElementById(reportBox.getId()).removeChild(divs[0]); // This removes the first div inside the container
       }
       document.getElementById(reportBox.getId()).appendChild(dom.html(jsonAsHTML.render()));
-      origo.api().getUtils().makeElementDraggable(document.getElementById(reportBox.getId()));
+      viewer.getUtils().makeElementDraggable(document.getElementById(reportBox.getId()));
       document.getElementById(closeButtonReportBox.getId()).addEventListener('click', () => disableReportButton());
 
       //Add listener to buttons in report
@@ -135,34 +135,30 @@ const fetchContent = async () => {
 //Activate layer, zoom and getFeaturInfo for object
 const onClickItem = (e) => {
   //clear possible featureinfowindow
-  origo.api().getFeatureinfo().clear();
+  viewer.getFeatureinfo().clear();
 
   const category = jsonData.category.find(c => c.item.some(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id));
   const item = category.item.find(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id);
 
-  origo.api().getLayer(item.layerName).setVisible(true);
+  viewer.getLayer(item.layerName).setVisible(true);
   itemCoordinate = JSON.parse(item.geometry);
   layerName = item.layerName;
   layerGid = item.gid;
-
-  map.once('rendercomplete', () => onRenderComplete(itemCoordinate, layerName, layerGid));
-  //Extra settings to find feature when vector layer with id is not present
-  if(origo.api().getLayer(layerName).getProperties().layerType != 'vector' || !layerGid){
-    origo.api().getMap().getView().setZoom(10);
-    map.getView().setCenter(itemCoordinate);
+  // Zoom to object if not in view, timeout to wait for rendercomplete after zoom
+  if(!Origo.ol.geom.Polygon.fromExtent(map.getView().calculateExtent(map.getSize())).intersectsCoordinate(itemCoordinate)){
+    map.getView().fit(geom, {duration: 500});
+    setTimeout(() => {
+      map.once('rendercomplete', () => onRenderComplete(itemCoordinate, layerName, layerGid));
+    }, 100);
+  }
+  else{
+    map.once('rendercomplete', () => onRenderComplete(itemCoordinate, layerName, layerGid));
   }
 }
 
 const onRenderComplete = (itemCoordinate, layerName, layerGid) =>{
   //Only run function if there is a coordinate 
   if (!itemCoordinate) return;
-
-  //Vector layer with ID field can make use of origo api function to show and zoom to object
-  if(origo.api().getLayer(layerName).getProperties().layerType == 'vector' && layerGid){
-    origo.api().getFeatureinfo().showFeatureInfo({ feature: origo.api().getLayer(layerName).getSource().getFeatureById(`${layerName}.${layerGid}`), layerName: layerName });
-  }
-  //Vector layer without ID field or WMS layer need more handling
-  else{
     let pixel = map.getPixelFromCoordinate(itemCoordinate);
     let parameters = { clusterFeatureinfoLevel: 2, coordinate: itemCoordinate, hitTolerance: 5, map: map, pixel: pixel};
     let remoteParameters = { coordinate: itemCoordinate, map: map, pixel: pixel}
@@ -173,14 +169,12 @@ const onRenderComplete = (itemCoordinate, layerName, layerGid) =>{
     Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
       const serverResult = data || [];
       const result = serverResult.concat(clientResult).filter((feature) => feature.feature.id_ === `${layerName}.${layerGid}` || feature.selectionGroup === layerName);
-      //Show infowindow and zoom to object
+      //Show infowindow of object
       if( (result.length > 0)) {
         //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
-        origo.api().getFeatureinfo().render(result, viewer.getViewerOptions().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
-        map.getView().fit(result[0].feature.getGeometry().getExtent());
+        viewer.getFeatureinfo().render(result, viewer.getViewerOptions().featureinfoOptions.infowindow || 'overlay', itemCoordinate);
       }
     });
-  }
 }
 
 const createJsonTable = (jsonData) => {
@@ -401,8 +395,15 @@ const mapInteraction = (drawTool) => {
     coordinatesArray = [];
     //Creates coordinateArray for FME Flow
      if (pickActive) {
+      let urlCall;
+      if(viewer.getLayer(layerGeomName).getProperties().layerType == 'vector'){
+       urlCall = viewer.getLayer(layerGeomName).getSource()._options.url;
+      }
+      else{
+        urlCall = viewer.getLayer(layerGeomName).getSource().getUrls()[0];
+      }
       //layerGeomName is defined in the config file and source is fetched from the layer
-      let response = fetch(origo.api().getLayer(layerGeomName).getSource()._options.url + '?service=WFS&version=1.1.0&request=GetFeature&typeName=' + layerGeomName +'&outputFormat=application/json&srsname=EPSG:3011&maxfeatures=1&cql_filter=INTERSECTS(geom, POINT (' +coordinates[1] + ' ' + coordinates[0] + '))')
+      let response = fetch(urlCall + '?service=WFS&version=1.1.0&request=GetFeature&typeName=' + layerGeomName +'&outputFormat=application/json&srsname=EPSG:3011&maxfeatures=1&cql_filter=INTERSECTS(geom, POINT (' +coordinates[1] + ' ' + coordinates[0] + '))')
         .then(response => response.json())
         .then(data => {
           const responseData = data;
@@ -688,12 +689,12 @@ return Origo.ui.Component({
     document.getElementById(closeButtonToolBox.getId()).addEventListener('click', () => disableReportButton());
     document.getElementById(polygonButton.getId()).addEventListener('click', () => mapInteraction('Polygon'));
     document.getElementById(pointButton.getId()).addEventListener('click', () => mapInteraction('Point'));
-    if(origo.api().getLayer(layerGeomName)){
+    if(viewer.getLayer(layerGeomName)){
       document.getElementById(geometryButtonsComponent.getId()).appendChild(dom.html(pickGeometryButton.render()));
       document.getElementById(pickGeometryButton.getId()).addEventListener('click', () => mapInteraction('Pick'));
     }
 
-    origo.api().getUtils().makeElementDraggable(document.getElementById(reportToolBox.getId()));
+    viewer.getUtils().makeElementDraggable(document.getElementById(reportToolBox.getId()));
 
     document.getElementById(reportSelect.getId()).addEventListener('change', () => {
       if (document.getElementById(reportSelect.getId()).value !== '') {
