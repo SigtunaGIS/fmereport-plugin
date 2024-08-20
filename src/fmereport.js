@@ -146,7 +146,7 @@ const onClickItem = (e) => {
   layerGid = item.gid;
   // Zoom to object if not in view, timeout to wait for rendercomplete after zoom
   if(!Origo.ol.geom.Polygon.fromExtent(map.getView().calculateExtent(map.getSize())).intersectsCoordinate(itemCoordinate)){
-    map.getView().fit(geom, {duration: 500});
+    map.getView().fit(geom, {duration: 500, maxZoom: 10});
     setTimeout(() => {
       map.once('rendercomplete', () => onRenderComplete(itemCoordinate, layerName, layerGid));
     }, 100);
