@@ -3,7 +3,8 @@ const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
   reportIcon = '#fa-info-circle',
-  pickGeomLayer = 'layerName in origo config, activates pick geometry button on layer'
+  pickGeomLayer = 'layerName in origo config, activates pick geometry button on layer',
+  maxArea = 50000,
 } = {}) {
 
   const
@@ -57,13 +58,37 @@ const Fmereport = function Fmereport({
 //Initiate fetch from FME Flow ( or other source)
 const fetchContent = async () => {
   //No geometry or no selected report results in alert error
-  if (coordinatesArray.length === 0) {
-    window.alert("Ingen geometri ritad");
+  if (document.getElementById(reportSelect.getId()).value === ''){
+    viewer.getLogger().createToast({
+      status:'warning', 
+      duration:3000, 
+      title:'Rapportval saknas', 
+      message:'Ingen rapport vald'
+    });
     return;
   }
-  if (document.getElementById(reportSelect.getId()).value === ''){
-    window.alert("Ingen rapport vald");
+  if (coordinatesArray.length === 0) {
+    viewer.getLogger().createToast({
+      status:'warning', 
+      duration:3000, 
+      title:'Geometri saknas', 
+      message:'Ingen geometri ritad'
+    });
     return;
+  }
+  if (geom.getType() === 'Point') {
+  }
+  else {
+    if (geom.getArea() > maxArea) {
+      viewer.getLogger().createToast({
+        status:'warning', 
+        duration:3000, 
+        title:'För stort område', 
+        message:'Maxstorlek på område är 5 hektar'
+      });
+      source.clear();
+      return;
+    }
   }
   document.getElementById(reportToolBox.getId()).classList.add('o-hidden');
   document.body.style.cursor = 'wait';
@@ -224,14 +249,18 @@ const createReportCategory = (categories) => {
   for (const item of categories.item) {
     //Create textinformation
     catContainer.appendChild(createReportItem(item));
+
     //Create buttons
     const linkEl = createReportLink(item);
     const mapEl = createReportMap(item);
 
+    //Exlude buttons from pdf export
+    linkEl.setAttribute('data-html2canvas-ignore', 'true');
+    mapEl.setAttribute('data-html2canvas-ignore', 'true');
+
     catContainer.appendChild(linkEl);
     catContainer.appendChild(mapEl);
   }
-
   return catContainer;
 }
 
@@ -261,9 +290,11 @@ const createReportMap = (item) => {
 
 const createReportButton = (icon) => {
   return Origo.ui.Button({
-    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip report-button\" data-html2canvas-ignore=\"true\"',
+    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip relative report-button',
     tagName: 'div',
-    icon: icon || '#fa-map-marker'
+    icon: icon || '#fa-map-marker',
+    tooltipText: 'Zooma till',
+    tooltipPlacement: 'west'      
   });
 }
 
@@ -346,8 +377,6 @@ const mapInteraction = (drawTool) => {
     'Polygon': polygonButton.getId(),
     'Point': pointButton.getId(),
     'Pick': pickGeometryButton.getId()
-    // Add more tools here as needed, for example:
-    // 'Pick': pickGeometryButton.getId(),
   };
   let activeButtonId = toolButtonMapping[drawTool];
   if (drawTool === 'Pick') {
@@ -411,8 +440,10 @@ const mapInteraction = (drawTool) => {
           const olFeature = new Origo.ol.Feature({
             geometry: responseGeom
           });
-        coordinatesArray = format.writeGeometry(olFeature.getGeometry());
+        geom = olFeature.getGeometry();
+        coordinatesArray = format.writeGeometry(geom);
         source.addFeature(olFeature);
+        geomAreaCheck();
       })
         .catch(error => {
           // Handle any errors
@@ -422,10 +453,10 @@ const mapInteraction = (drawTool) => {
     }
     else {
       coordinatesArray = format.writeGeometry(geom);
+      geomAreaCheck();
     }
     document.getElementById(activeButtonId).classList.remove('active');
     document.getElementById(requestButton.getId()).classList.remove('disabled');
-    document.getElementById(requestButtonText.getId()).innerHTML = 'Markering gjord';
     enableDoubleClickZoom();
     toggleDraw(false);
     map.removeInteraction(draw);
@@ -435,11 +466,29 @@ const mapInteraction = (drawTool) => {
   }
 }
 
+const geomAreaCheck = () => {
+  if (geom.getType() === 'Point') {
+    document.getElementById(requestButtonText.getId()).innerHTML = 'Markering gjord';
+    return;
+  }
+  if(geom.getArea() > maxArea) {
+    viewer.getLogger().createToast({
+      status:'warning', 
+      duration:2000, 
+      title:'För stort område', 
+      message:'Maxstorlek på område är 5 hektar'
+    });
+    document.getElementById(requestButtonText.getId()).innerHTML = 'För stor yta';
+  }
+  else {
+    document.getElementById(requestButtonText.getId()).innerHTML = 'Markering gjord';
+  }   
+}
+
 const enableReportButton = () => {
   document.getElementById(reportButton.getId()).classList.add('active');
   document.getElementById(reportToolBox.getId()).classList.remove('o-hidden');
 }
-
 
 const disableReportButton = () => {
   document.getElementById(reportBox.getId()).classList.add('o-hidden');
@@ -650,7 +699,7 @@ return Origo.ui.Component({
     });
 
     reportButton = Origo.ui.Button({
-      cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip',
+      cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip relative',
       click() {
         toggleReportButton();
       },
