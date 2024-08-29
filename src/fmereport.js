@@ -60,6 +60,7 @@ const fetchContent = async () => {
   //No geometry or no selected report results in alert error
   if (document.getElementById(reportSelect.getId()).value === ''){
     viewer.getLogger().createToast({
+      'max-width': '50%',
       status:'warning', 
       duration:3000, 
       title:'Rapportval saknas', 
@@ -245,6 +246,7 @@ const createReportCategory = (categories) => {
   title.className = 'category-header';
   title.textContent = categories.name;
   catContainer.appendChild(title);
+  
   //Create items
   for (const item of categories.item) {
     //Create textinformation
@@ -265,7 +267,7 @@ const createReportCategory = (categories) => {
 }
 
 const createReportLink = (item) => {
-  const linkEl = document.createElement('a');
+  const linkEl = document.createElement('div');
   linkEl.className = 'report-button-wrapper';
   if (item.link) {
     const linkButtonEl = createReportButton(item.icon);
@@ -290,11 +292,11 @@ const createReportMap = (item) => {
 
 const createReportButton = (icon) => {
   return Origo.ui.Button({
-    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip relative report-button',
+    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip relative',
     tagName: 'div',
     icon: icon || '#fa-map-marker',
-    tooltipText: 'Zooma till',
-    tooltipPlacement: 'west'      
+    tooltipText: icon ? 'Gå till länk' : 'Visa på karta',
+    tooltipPlacement: 'west'
   });
 }
 
@@ -536,7 +538,8 @@ const downloadPDF = async function downloadPDF(el) {
       logging:false
     },
     autoPaging: 'text',
-    margin: [0,0,0,30],
+    align: 'center',
+    margin: [10,30,30,30],
     x: (-(el.getBoundingClientRect().left)) + 20,
     y: (-(el.getBoundingClientRect().top)) + 20,
   });
