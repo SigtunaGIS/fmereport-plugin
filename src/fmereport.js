@@ -87,7 +87,7 @@ const fetchContent = async () => {
         status:'warning', 
         duration:3000, 
         title:'För stort område', 
-        message:'Maxstorlek på område är 5 hektar'
+        message:'Maxstorlek på område är ' + (maxArea/10000) + ' hektar' //Asumes that hektar is always a relevant unit
       });
       source.clear();
       return;
@@ -483,7 +483,7 @@ const geomAreaCheck = () => {
       status:'warning', 
       duration:2000, 
       title:'För stort område', 
-      message:'Maxstorlek på område är 5 hektar'
+      message:'Maxstorlek på område är ' + (maxArea/10000) + ' hektar' //Asumes that hektar is always a relevant unit
     });
     document.getElementById(requestButtonText.getId()).innerHTML = 'För stor yta';
   }
