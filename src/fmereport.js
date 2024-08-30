@@ -3,7 +3,8 @@ const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
   reportIcon = '#fa-info-circle',
-  pickGeomLayer = 'layerName in origo config, activates pick geometry button on layer'
+  pickGeomLayer = 'layerName in origo config, activates pick geometry button on layer',
+  maxArea = 50000,
 } = {}) {
 
   const
@@ -50,6 +51,8 @@ const Fmereport = function Fmereport({
   pickActive = false,
   geom,
   coordinatesArray = [],
+  linkId = [],
+  reportLink = [],
   jsonData,
   draw,
   layerGid;  
@@ -57,14 +60,41 @@ const Fmereport = function Fmereport({
 //Initiate fetch from FME Flow ( or other source)
 const fetchContent = async () => {
   //No geometry or no selected report results in alert error
-  if (coordinatesArray.length === 0) {
-    window.alert("Ingen geometri ritad");
-    return;
-  }
   if (document.getElementById(reportSelect.getId()).value === ''){
-    window.alert("Ingen rapport vald");
+    viewer.getLogger().createToast({
+      'max-width': '50%',
+      status:'warning', 
+      duration:3000, 
+      title:'Rapportval saknas', 
+      message:'Ingen rapport vald'
+    });
     return;
   }
+  if (coordinatesArray.length === 0) {
+    viewer.getLogger().createToast({
+      status:'warning', 
+      duration:3000, 
+      title:'Geometri saknas', 
+      message:'Ingen geometri ritad'
+    });
+    return;
+  }
+  //Empty linkId and reportLink arrays
+  if(linkId){
+    linkId = [];
+    reportLink = [];
+  }
+  //Check if area is to large for FME Flow, points are never too large
+    if (geom.getArea() > maxArea && geom.getType() !== 'Point') {
+      viewer.getLogger().createToast({
+        status:'warning', 
+        duration:3000, 
+        title:'För stort område', 
+        message:'Maxstorlek på område är ' + (maxArea/10000) + ' hektar' //Asumes that hektar is always a relevant unit
+      });
+      source.clear();
+      return;
+    }
   document.getElementById(reportToolBox.getId()).classList.add('o-hidden');
   document.body.style.cursor = 'wait';
   try {
@@ -108,8 +138,13 @@ const fetchContent = async () => {
         for(const item of category.item){
           if(item.id && item.geometry ){
             document.getElementById(item.id).addEventListener('click', onClickItem);
+            document.getElementById(item.id).setAttribute('data-html2canvas-ignore', 'true');
         }
       }
+      }
+      for (let i = 0; i < linkId.length; i++) {
+        document.getElementById(linkId[i]).addEventListener('click', () => window.open(reportLink[i]));
+        document.getElementById(linkId[i]).setAttribute('data-html2canvas-ignore', 'true');
       }
       document.getElementById(reportBox.getId()).classList.remove('o-hidden');
      } 
@@ -220,10 +255,12 @@ const createReportCategory = (categories) => {
   title.className = 'category-header';
   title.textContent = categories.name;
   catContainer.appendChild(title);
+  
   //Create items
   for (const item of categories.item) {
     //Create textinformation
     catContainer.appendChild(createReportItem(item));
+
     //Create buttons
     const linkEl = createReportLink(item);
     const mapEl = createReportMap(item);
@@ -231,18 +268,19 @@ const createReportCategory = (categories) => {
     catContainer.appendChild(linkEl);
     catContainer.appendChild(mapEl);
   }
-
   return catContainer;
 }
 
 const createReportLink = (item) => {
-  const linkEl = document.createElement('a');
+  const linkEl = document.createElement('div');
   linkEl.className = 'report-button-wrapper';
   if (item.link) {
     const linkButtonEl = createReportButton(item.icon);
     linkEl.href = item.link;
     linkEl.target = '_blank';
     linkEl.rel = 'noopener noreferrer';
+    linkId.push(linkButtonEl.getId());
+    reportLink.push(item.link);
     linkEl.innerHTML = linkButtonEl.render();
   }
   return linkEl;
@@ -261,9 +299,11 @@ const createReportMap = (item) => {
 
 const createReportButton = (icon) => {
   return Origo.ui.Button({
-    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip report-button\" data-html2canvas-ignore=\"true\"',
+    cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip relative',
     tagName: 'div',
-    icon: icon || '#fa-map-marker'
+    icon: icon || '#fa-map-marker',
+    tooltipText: icon ? 'Gå till länk' : 'Visa på karta',
+    tooltipPlacement: 'west'
   });
 }
 
@@ -346,8 +386,6 @@ const mapInteraction = (drawTool) => {
     'Polygon': polygonButton.getId(),
     'Point': pointButton.getId(),
     'Pick': pickGeometryButton.getId()
-    // Add more tools here as needed, for example:
-    // 'Pick': pickGeometryButton.getId(),
   };
   let activeButtonId = toolButtonMapping[drawTool];
   if (drawTool === 'Pick') {
@@ -411,8 +449,10 @@ const mapInteraction = (drawTool) => {
           const olFeature = new Origo.ol.Feature({
             geometry: responseGeom
           });
-        coordinatesArray = format.writeGeometry(olFeature.getGeometry());
+        geom = olFeature.getGeometry();
+        coordinatesArray = format.writeGeometry(geom);
         source.addFeature(olFeature);
+        geomAreaCheck();
       })
         .catch(error => {
           // Handle any errors
@@ -422,10 +462,10 @@ const mapInteraction = (drawTool) => {
     }
     else {
       coordinatesArray = format.writeGeometry(geom);
+      geomAreaCheck();
     }
     document.getElementById(activeButtonId).classList.remove('active');
     document.getElementById(requestButton.getId()).classList.remove('disabled');
-    document.getElementById(requestButtonText.getId()).innerHTML = 'Markering gjord';
     enableDoubleClickZoom();
     toggleDraw(false);
     map.removeInteraction(draw);
@@ -435,11 +475,29 @@ const mapInteraction = (drawTool) => {
   }
 }
 
+const geomAreaCheck = () => {
+  if (geom.getType() === 'Point') {
+    document.getElementById(requestButtonText.getId()).innerHTML = 'Markering gjord';
+    return;
+  }
+  if(geom.getArea() > maxArea) {
+    viewer.getLogger().createToast({
+      status:'warning', 
+      duration:2000, 
+      title:'För stort område', 
+      message:'Maxstorlek på område är ' + (maxArea/10000) + ' hektar' //Asumes that hektar is always a relevant unit
+    });
+    document.getElementById(requestButtonText.getId()).innerHTML = 'För stor yta';
+  }
+  else {
+    document.getElementById(requestButtonText.getId()).innerHTML = 'Markering gjord';
+  }   
+}
+
 const enableReportButton = () => {
   document.getElementById(reportButton.getId()).classList.add('active');
   document.getElementById(reportToolBox.getId()).classList.remove('o-hidden');
 }
-
 
 const disableReportButton = () => {
   document.getElementById(reportBox.getId()).classList.add('o-hidden');
@@ -487,7 +545,8 @@ const downloadPDF = async function downloadPDF(el) {
       logging:false
     },
     autoPaging: 'text',
-    margin: [0,0,0,30],
+    align: 'center',
+    margin: [10,30,30,30],
     x: (-(el.getBoundingClientRect().left)) + 20,
     y: (-(el.getBoundingClientRect().top)) + 20,
   });
@@ -650,7 +709,7 @@ return Origo.ui.Component({
     });
 
     reportButton = Origo.ui.Button({
-      cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip',
+      cls: 'o-fmereport padding-small icon-smaller round light box-shadow tooltip relative',
       click() {
         toggleReportButton();
       },
