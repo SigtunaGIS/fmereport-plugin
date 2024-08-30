@@ -51,6 +51,8 @@ const Fmereport = function Fmereport({
   pickActive = false,
   geom,
   coordinatesArray = [],
+  linkId = [],
+  reportLink = [],
   jsonData,
   draw,
   layerGid;  
@@ -134,8 +136,13 @@ const fetchContent = async () => {
         for(const item of category.item){
           if(item.id && item.geometry ){
             document.getElementById(item.id).addEventListener('click', onClickItem);
+            document.getElementById(item.id).setAttribute('data-html2canvas-ignore', 'true');
         }
       }
+      }
+      for (let i = 0; i < linkId.length; i++) {
+        document.getElementById(linkId[i]).addEventListener('click', () => window.open(reportLink[i]));
+        document.getElementById(linkId[i]).setAttribute('data-html2canvas-ignore', 'true');
       }
       document.getElementById(reportBox.getId()).classList.remove('o-hidden');
      } 
@@ -256,10 +263,6 @@ const createReportCategory = (categories) => {
     const linkEl = createReportLink(item);
     const mapEl = createReportMap(item);
 
-    //Exlude buttons from pdf export
-    linkEl.setAttribute('data-html2canvas-ignore', 'true');
-    mapEl.setAttribute('data-html2canvas-ignore', 'true');
-
     catContainer.appendChild(linkEl);
     catContainer.appendChild(mapEl);
   }
@@ -274,6 +277,8 @@ const createReportLink = (item) => {
     linkEl.href = item.link;
     linkEl.target = '_blank';
     linkEl.rel = 'noopener noreferrer';
+    linkId.push(linkButtonEl.getId());
+    reportLink.push(item.link);
     linkEl.innerHTML = linkButtonEl.render();
   }
   return linkEl;
