@@ -79,10 +79,13 @@ const fetchContent = async () => {
     });
     return;
   }
-  if (geom.getType() === 'Point') {
+  //Empty linkId and reportLink arrays
+  if(linkId){
+    linkId = [];
+    reportLink = [];
   }
-  else {
-    if (geom.getArea() > maxArea) {
+  //Check if area is to large for FME Flow, points are never too large
+    if (geom.getArea() > maxArea && geom.getType() !== 'Point') {
       viewer.getLogger().createToast({
         status:'warning', 
         duration:3000, 
@@ -92,7 +95,6 @@ const fetchContent = async () => {
       source.clear();
       return;
     }
-  }
   document.getElementById(reportToolBox.getId()).classList.add('o-hidden');
   document.body.style.cursor = 'wait';
   try {
