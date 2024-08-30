@@ -174,7 +174,14 @@ const onClickItem = (e) => {
 
   const category = jsonData.category.find(c => c.item.some(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id));
   const item = category.item.find(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id);
-
+  //Looks for layer in groupLayers and sets it visible if found
+  viewer.getGroupLayers().forEach((groupLayer) => {
+    groupLayer.getLayers().forEach((layer) => {
+      if (layer.getProperties().name === item.layerName) {
+        groupLayer.setVisible(true);
+      }
+    });
+  });
   viewer.getLayer(item.layerName).setVisible(true);
   itemCoordinate = JSON.parse(item.geometry);
   layerName = item.layerName;
@@ -434,7 +441,15 @@ const mapInteraction = (drawTool) => {
     //Creates coordinateArray for FME Flow
      if (pickActive) {
       let urlCall;
-      if(viewer.getLayer(layerGeomName).getProperties().layerType == 'vector'){
+      //If layer is a group, fetch source from layer in group with same name
+      if(viewer.getLayer(layerGeomName).getProperties().layerType == 'group'){
+        viewer.getLayer(layerGeomName).getLayers().forEach((layer) => {
+          if(layer.getProperties().name == layerGeomName){
+            urlCall = viewer.getLayer(layerGeomName).getLayers().item(i).getSource()._options.url;
+          }
+        }); 
+      }
+      else if(viewer.getLayer(layerGeomName).getProperties().layerType == 'vector'){
        urlCall = viewer.getLayer(layerGeomName).getSource()._options.url;
       }
       else{
