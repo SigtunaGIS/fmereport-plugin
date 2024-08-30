@@ -172,8 +172,8 @@ const onClickItem = (e) => {
   //clear possible featureinfowindow
   viewer.getFeatureinfo().clear();
 
-  const category = jsonData.category.find(c => c.item.some(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id));
-  const item = category.item.find(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.parentNode.id);
+  const category = jsonData.category.find(c => c.item.some(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.id || i.id === e.srcElement.parentNode.parentNode.id));
+  const item = category.item.find(i => i.id === e.srcElement.id || i.id === e.srcElement.parentNode.id || i.id === e.srcElement.parentNode.parentNode.id);
   //Looks for layer in groupLayers and sets it visible if found
   viewer.getGroupLayers().forEach((groupLayer) => {
     groupLayer.getLayers().forEach((layer) => {
