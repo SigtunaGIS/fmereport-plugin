@@ -17,8 +17,26 @@ const Fmereport = function Fmereport({
   title: 'reportLayer',
   source,
   zIndex: 8,
-  styleName: 'origoStylefunction'
-});
+  style: new Origo.ol.style.Style({
+    fill: new Origo.ol.style.Fill({
+      color: 'rgba(0, 153, 255, 0.2)'
+    }),
+    stroke: new Origo.ol.style.Stroke({
+      width: 3,
+      color: 'rgba(0, 153, 255, 1)'
+    }),
+    image: new Origo.ol.style.Circle({
+      radius: 7,
+      stroke: new Origo.ol.style.Stroke({
+        width: 3,
+        color: 'rgba(0, 153, 255, 1)'
+      }),
+      fill: new Origo.ol.style.Fill({
+        color: 'rgba(0, 153, 255, 0.2)'
+      })
+    })
+})
+  });
   let 
   layerGeomName = pickGeomLayer,
   content,
