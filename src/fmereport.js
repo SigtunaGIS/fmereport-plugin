@@ -363,7 +363,9 @@ const createReportItem = (item) => {
   const descEl = document.createElement('div');
   descEl.className = 'report-item';
   //Text from FME, replace newrow with br
-  descEl.innerHTML = item.description.replace(/\n/g, '<br>');
+  if(item.description){
+    descEl.innerHTML = item.description.replace(/\n/g, '<br>');
+  }
   itemContainer.appendChild(descEl);
 
   return itemContainer;
