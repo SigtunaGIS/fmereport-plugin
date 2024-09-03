@@ -85,7 +85,8 @@ const fetchContent = async () => {
     reportLink = [];
   }
   //Check if area is to large for FME Flow, points are never too large
-    if (geom.getArea() > maxArea && geom.getType() !== 'Point') {
+  if(geom.getType() !== 'Point'){
+    if (geom.getArea() > maxArea) {
       viewer.getLogger().createToast({
         status:'warning', 
         duration:3000, 
@@ -95,6 +96,7 @@ const fetchContent = async () => {
       source.clear();
       return;
     }
+  }
   document.getElementById(reportToolBox.getId()).classList.add('o-hidden');
   document.body.style.cursor = 'wait';
   try {
