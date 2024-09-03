@@ -230,7 +230,24 @@ const onRenderComplete = (itemCoordinate, layerName, layerGid) =>{
     //Get WMS features
     Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
       const serverResult = data || [];
-      const result = serverResult.concat(clientResult).filter((feature) => feature.feature.id_ === `${layerName}.${layerGid}` || feature.selectionGroup === layerName);
+      const matchedIds = new Set(); // To keep track of matched IDs
+
+      // First pass to find all matching IDs
+      serverResult.concat(clientResult).forEach((feature) => {
+          if (feature.feature.id_ === `${layerName}.${layerGid}`) {
+              matchedIds.add(feature.feature.id_);
+          }
+      });
+      
+      // Second pass to filter based on the matched IDs
+      const result = serverResult.concat(clientResult).filter((feature) => {
+          // If there's a match on ID, ignore selectionGroup matches
+          if (matchedIds.size > 0) {
+              return matchedIds.has(feature.feature.id_);
+          }
+          // Otherwise, match on selectionGroup
+          return feature.selectionGroup === layerName;
+      });
       //Show infowindow of object
       if( (result.length > 0)) {
         //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
