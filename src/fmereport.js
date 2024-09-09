@@ -73,7 +73,9 @@ const Fmereport = function Fmereport({
   reportLink = [],
   jsonData,
   draw,
-  layerGid;  
+  layerGid,
+  layerGeomGid,
+  reportTool;  
 
 //Initiate fetch from FME Flow ( or other source)
 const fetchContent = async () => {
@@ -120,7 +122,15 @@ const fetchContent = async () => {
   try {
     //Call FME Flow
     //TODO: Implementera autentisering mot FME Flow för att kunna nyttja FME api. Möjliggör då dynamiska vallistor baserade på användarens behörigheter och dynamiska parameterval baserade på publicerade parametrar för workspace.
-    const response = await fetch(document.getElementById(reportSelect.getId()).value + '&PARAMETER='+coordinatesArray);
+    let parameters;
+    //Pick geometry from layer handles differently in FME Flow
+    if(reportTool === 'Pick'){
+       parameters = '&LAYER='+layerGeomName + '&GID=' + layerGeomGid ;
+    }
+    else{
+       parameters =  '&GEOM='+coordinatesArray;
+    }
+    const response = await fetch(document.getElementById(reportSelect.getId()).value + parameters);
     //No response from call throws error
     if (!response.ok) {
       throw new Error('Network response was not ok.');
@@ -230,7 +240,24 @@ const onRenderComplete = (itemCoordinate, layerName, layerGid) =>{
     //Get WMS features
     Origo.getFeatureInfo.getFeaturesFromRemote(remoteParameters, viewer).then((data) => {
       const serverResult = data || [];
-      const result = serverResult.concat(clientResult).filter((feature) => feature.feature.id_ === `${layerName}.${layerGid}` || feature.selectionGroup === layerName);
+      const matchedIds = new Set(); // To keep track of matched IDs
+
+      // First pass to find all matching IDs
+      serverResult.concat(clientResult).forEach((feature) => {
+          if (feature.feature.id_ === `${layerName}.${layerGid}`) {
+              matchedIds.add(feature.feature.id_);
+          }
+      });
+      
+      // Second pass to filter based on the matched IDs
+      const result = serverResult.concat(clientResult).filter((feature) => {
+          // If there's a match on ID, ignore selectionGroup matches
+          if (matchedIds.size > 0) {
+              return matchedIds.has(feature.feature.id_);
+          }
+          // Otherwise, match on selectionGroup
+          return feature.selectionGroup === layerName;
+      });
       //Show infowindow of object
       if( (result.length > 0)) {
         //Get infowindow type from config or default to overlay. Infowindow can also be set from index.json
@@ -346,7 +373,9 @@ const createReportItem = (item) => {
   const descEl = document.createElement('div');
   descEl.className = 'report-item';
   //Text from FME, replace newrow with br
-  descEl.innerHTML = item.description.replace(/\n/g, '<br>');
+  if(item.description){
+    descEl.innerHTML = item.description.replace(/\n/g, '<br>');
+  }
   itemContainer.appendChild(descEl);
 
   return itemContainer;
@@ -414,7 +443,9 @@ const mapInteraction = (drawTool) => {
     'Point': pointButton.getId(),
     'Pick': pickGeometryButton.getId()
   };
+  pickActive = false;
   let activeButtonId = toolButtonMapping[drawTool];
+  reportTool = drawTool;
   if (drawTool === 'Pick') {
     pickActive = true;
   }
@@ -485,6 +516,7 @@ const mapInteraction = (drawTool) => {
             geometry: responseGeom
           });
         geom = olFeature.getGeometry();
+        layerGeomGid = responseData.features[0].properties.gid;
         coordinatesArray = format.writeGeometry(geom);
         source.addFeature(olFeature);
         geomAreaCheck();
