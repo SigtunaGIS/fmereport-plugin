@@ -73,7 +73,9 @@ const Fmereport = function Fmereport({
   reportLink = [],
   jsonData,
   draw,
-  layerGid;  
+  layerGid,
+  layerGeomGid,
+  reportTool;  
 
 //Initiate fetch from FME Flow ( or other source)
 const fetchContent = async () => {
@@ -120,7 +122,15 @@ const fetchContent = async () => {
   try {
     //Call FME Flow
     //TODO: Implementera autentisering mot FME Flow för att kunna nyttja FME api. Möjliggör då dynamiska vallistor baserade på användarens behörigheter och dynamiska parameterval baserade på publicerade parametrar för workspace.
-    const response = await fetch(document.getElementById(reportSelect.getId()).value + '&PARAMETER='+coordinatesArray);
+    let parameters;
+    //Pick geometry from layer handles differently in FME Flow
+    if(reportTool === 'Pick'){
+       parameters = '&LAYER='+layerGeomName + '&GID=' + layerGeomGid ;
+    }
+    else{
+       parameters =  '&GEOM='+coordinatesArray;
+    }
+    const response = await fetch(document.getElementById(reportSelect.getId()).value + parameters);
     //No response from call throws error
     if (!response.ok) {
       throw new Error('Network response was not ok.');
@@ -433,7 +443,9 @@ const mapInteraction = (drawTool) => {
     'Point': pointButton.getId(),
     'Pick': pickGeometryButton.getId()
   };
+  pickActive = false;
   let activeButtonId = toolButtonMapping[drawTool];
+  reportTool = drawTool;
   if (drawTool === 'Pick') {
     pickActive = true;
   }
@@ -504,6 +516,7 @@ const mapInteraction = (drawTool) => {
             geometry: responseGeom
           });
         geom = olFeature.getGeometry();
+        layerGeomGid = responseData.features[0].properties.gid;
         coordinatesArray = format.writeGeometry(geom);
         source.addFeature(olFeature);
         geomAreaCheck();
