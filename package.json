@@ -10,14 +10,14 @@
     "build": "webpack --config ./tasks/webpack.prod.js"
   },
   "devDependencies": {
-    "css-loader": "^7.1.1",
-    "mini-css-extract-plugin": "^2.9.0",
+    "css-loader": "^7.1.2",
+    "mini-css-extract-plugin": "^2.9.2",
     "style-loader": "^4.0.0",
-    "webpack": "^5.90.3",
-    "webpack-cli": "^5.1.4",
-    "webpack-merge": "^5.10.0"
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1",
+    "webpack-merge": "^6.0.1"
   },
   "dependencies": {
-    "jspdf": "^2.5.1"
+    "jspdf": "^3.0.1"
   }
 }
