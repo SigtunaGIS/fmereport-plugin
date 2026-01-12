@@ -1,4 +1,8 @@
 import { jsPDF } from 'jspdf';
+
+window.jsPDF = jsPDF;
+window.jspdf = { jsPDF };
+
 const Fmereport = function Fmereport({
   reportNames = ['Report name 1'],
   reportUrls = ['FME Flow URL with token parameter'],
@@ -230,7 +234,7 @@ const Fmereport = function Fmereport({
   }
 
   const onRenderComplete = (itemCoordinate, layerName, layerGid) => {
-    //Only run function if there is a coordinate 
+    //Only run function if there is a coordinate
     if (!itemCoordinate) return;
     let pixel = map.getPixelFromCoordinate(itemCoordinate);
     let parameters = { clusterFeatureinfoLevel: 2, coordinate: itemCoordinate, hitTolerance: 5, map: map, pixel: pixel };
